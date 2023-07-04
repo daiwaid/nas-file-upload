@@ -1,0 +1,17 @@
+:root {
+  --foreground-rgb: 50, 50, 50;
+  --background-rgb-1: 238, 119, 82;
+  --background-rgb-2: 231, 60, 126;
+  --background-rgb-3: 35, 166, 213;
+  --background-rgb-4: 35, 213, 171;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 200, 200, 200;
+    --background-rgb-1: 25, 0, 20;
+    --background-rgb-2: 55, 0, 55;
+    --background-rgb-3: 20, 0, 75;
+    --background-rgb-4: 0, 0, 25;
+  }
+}

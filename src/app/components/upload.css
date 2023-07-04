@@ -1,0 +1,136 @@
+body {
+  color: rgb(var(--foreground-rgb));
+  background-color: black;
+  background: linear-gradient(
+      -45deg,
+      rgb(var(--background-rgb-1)),
+      rgb(var(--background-rgb-2)),
+      rgb(var(--background-rgb-3)),
+      rgb(var(--background-rgb-4)));
+  background-size: 1000%, 1000%;
+  height: 100vh;
+  animation: Gradient 30s ease infinite;
+  margin: 0;
+}
+
+.upload {
+  height: 80vh;
+  width: 80vw;
+  position: absolute;
+  font-size: 3em;
+  text-align: center;
+  padding: 20px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.box__file {
+  border-radius: 20px;
+  height: 80vh;
+  width: 80vw;
+  padding: 20px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(0, 0, 0, 0);
+  opacity: 0;
+  z-index: 2;
+}
+
+.svg-1, .svg-2, .svg-3 {
+  position: relative;
+  margin-bottom: 30px;
+  height: min(40vh, 40vw);
+  width: min(40vh, 40vw);
+  stroke-width: 0.8em;
+  stroke: rgb(var(--foreground-rgb));
+  stroke-linecap: round;
+  fill: none;
+}
+
+.svg-1 {
+  animation: Adding 4s linear infinite;
+}
+.svg-2 {
+  stroke-width: 0.5em;
+  animation: Loading 2s linear infinite;
+}
+#path1 {
+  stroke-dasharray: 400, 600;
+  animation: Done 2s;
+  opacity: 0;
+}
+
+#path2 {
+  stroke-dasharray: 700, 300;
+  animation: Done 1900ms;
+  opacity: 0;
+}
+
+@keyframes Gradient {
+  0% {
+		background-position: 100% 50%;
+	}
+  50% {
+    background-position: 0% 50%;
+  }
+	100% {
+		background-position: 100% 50%;
+	}
+}
+
+@keyframes Adding {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+@keyframes Loading {
+  0% {
+    stroke-dasharray: 30 600;
+    stroke-dashoffset: 1410;
+  }
+  50% {
+    stroke-dasharray: 500 130;
+    stroke-dashoffset: 1100;
+  }
+  100% {
+    stroke-dasharray: 30 600;
+    stroke-dashoffset: 150;
+  }
+}
+
+@keyframes Done {
+  0% {
+    opacity: 1;
+    stroke-dashoffset: 700;
+  }
+  20% {
+    stroke-dashoffset: 100;
+  }
+  80% {
+    stroke-dashoffset: 0;
+  }
+  99% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: -300;
+  }
+}
