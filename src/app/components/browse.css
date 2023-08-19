@@ -1,0 +1,55 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: none;
+  background-color: black;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.column {
+  flex: 25%;
+  max-width: 25%;
+  padding: 0 4px;
+}
+
+.column img {
+  vertical-align: middle;
+  width: 100%;
+  margin: 4px 0;
+  border-radius: 10px;
+}
+
+.column img:hover {
+  cursor: pointer;
+}
+
+/* Mobile */
+@media (max-width: 800px) {
+  .column {
+    flex: 50%;
+    max-width: 50%;
+    padding: 0 2px;
+  }
+
+  .column img {
+    margin: 2px;
+  }
+}
+
+/* Tablet and Smaller Desktop */
+@media (min-width: 701px) and (max-width: 1120px) {
+  .column {
+    flex: 33%;
+    max-width: 33%;
+    padding: 0 3px;
+  }
+  .column img {
+    margin: 3px;
+  }
+}

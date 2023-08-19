@@ -1,0 +1,33 @@
+.viewer {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgb(var(--background-rgb));
+  z-index: 2;
+}
+
+.img-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.img-container img {
+  position: absolute;
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.title-center-mv {
+  justify-self: center;
+  font-size: 0.7em;
+}
