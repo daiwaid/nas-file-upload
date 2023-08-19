@@ -60,7 +60,7 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   useEffect(() => {
     let selYr = 3, selMn = 3, mnInd = 0
     month.current = []
-    year.current = [<span>&nbsp;&nbsp;</span>, <span>&nbsp;&nbsp;</span>, <span>&nbsp;&nbsp;</span>]
+    year.current = [<span key={0}>&nbsp;&nbsp;</span>, <span key={1}>&nbsp;&nbsp;</span>, <span key={2}>&nbsp;&nbsp;</span>]
     yearsLen.current = [0, 0, 0]
     for (let i = 0; i < pages.length; i++) {
       const pg = pages[i]
@@ -72,7 +72,7 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
         
       const currYr = year.current.length-1
       if (!month.current[currYr])
-        month.current[currYr] = [<span>&nbsp;&nbsp;</span>, <span>&nbsp;&nbsp;</span>, <span>&nbsp;&nbsp;</span>, pg.month]
+        month.current[currYr] = [<span key={0}>&nbsp;&nbsp;</span>, <span key={1}>&nbsp;&nbsp;</span>, <span key={2}>&nbsp;&nbsp;</span>, pg.month]
       else
         month.current[currYr].push(pg.month)
       if (i === currPage) {
@@ -81,7 +81,7 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
       }
       mnInd += 1
     }
-    year.current = year.current.concat([<span>&nbsp;&nbsp;</span>, <span>&nbsp;&nbsp;</span>, <span>&nbsp;&nbsp;</span>])
+    year.current = year.current.concat([<span key={0}>&nbsp;&nbsp;</span>, <span key={1}>&nbsp;&nbsp;</span>, <span key={2}>&nbsp;&nbsp;</span>])
     setSelectedYr(selYr)
     setSelectedMn(selMn)
   }, [currPage])
@@ -118,7 +118,6 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
                 else return <div key={i.toString()} className='wheel-rest'>{y}</div>
               })}
             </div>
-            
           </div>
           <div style={{alignSelf: 'center'}}>-</div>
           <div className="dropdown-content" onWheel={scrollMn}>
@@ -151,8 +150,6 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
     <div className="menu-area">
       <div className='sel-area' onClick={openMenu}></div>
     </div>
-    
   )
   
-
 }
