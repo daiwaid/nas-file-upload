@@ -1,17 +1,84 @@
 :root {
-  --foreground-rgb: 50, 50, 50;
+  --foreground-rgb: 30, 30, 30;
+  --highlight-rgb: 255, 255, 255;
   --background-rgb-1: 238, 119, 82;
   --background-rgb-2: 231, 60, 126;
   --background-rgb-3: 35, 166, 213;
   --background-rgb-4: 35, 213, 171;
+  --background-rgb: 255, 255, 255;
+  --select-rgb: 220, 220, 220;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 200, 200, 200;
-    --background-rgb-1: 25, 0, 20;
-    --background-rgb-2: 55, 0, 55;
+    --highlight-rgb: 255, 255, 255;
+    --background-rgb-1: 50, 0, 12;
+    --background-rgb-2: 25, 0, 20;
     --background-rgb-3: 20, 0, 75;
-    --background-rgb-4: 0, 0, 25;
+    --background-rgb-4: 0, 41, 11;
+    --background-rgb: 0, 0, 0;
+    --select-rgb: 70, 70, 70;
+  }
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  
+}
+
+body {
+  background-color: rgb(var(--background-rgb));
+  color: rgb(var(--foreground-rgb));
+  margin: 0;
+}
+
+.title {
+  position: sticky;
+  top: 0;
+  height: 50px;
+  width: 100%;
+  margin: 0, 0;
+  font-size: 2em;
+  background-color: rgb(var(--background-rgb-3));
+  display: grid;
+  grid-template-columns: 50px 1fr clamp(150px, 20vw, 300px) 1fr 50px;
+  align-items: center;
+}
+
+.title-left {
+  margin: 0px 5px;
+  justify-self: left;
+  display: grid;
+  align-items: center;
+  cursor: pointer;
+}
+.title-center {
+  justify-self: center;
+}
+.title-right {
+  margin: 0px 5px;
+  justify-self: right;
+  display: grid;
+  align-items: center;
+  cursor: pointer;
+}
+
+.btn {
+  height: 40px;
+  stroke-width: 4px;
+  stroke: rgb(var(--foreground-rgb));
+  stroke-linecap: round;
+  fill: none;
+  transition-duration: 250ms;
+}
+
+
+/* Enable hover only on non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    stroke-width: 5px;
+    stroke: rgb(var(--highlight-rgb));
+    transition-duration: 250ms;
   }
 }

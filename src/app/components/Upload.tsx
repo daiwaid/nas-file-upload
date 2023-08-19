@@ -4,7 +4,7 @@ import { useRef, useState } from "react"
 import StatusIcon from "./StatusIcon"
 import './upload.css'
 
-export default function Upload() {
+export default function Upload({ togglePages }: { togglePages: () => void }) {
   const [status, setStatus] = useState('Upload')
 
   const form = useRef<any>(null)
@@ -34,8 +34,14 @@ export default function Upload() {
     })
   }
 
+  const arrow = <svg viewBox='0 0 50 50' className='btn'>
+                  <path d="M 15 10 L 30 25"/>
+                  <path d="M 15 40 L 30 25"/>
+                </svg>
+
   return (
-    <div>
+    <div className="upl">
+      <div className='left-arr' onClick={togglePages} style={{rotate: '180deg'}}>{arrow}</div>
       <form className='upload' ref={form} onChange={handleUpload}>
         <StatusIcon status={status} />
         <input type="file" className='box__file' multiple/>

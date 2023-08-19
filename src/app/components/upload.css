@@ -1,6 +1,5 @@
-body {
+.upl {
   color: rgb(var(--foreground-rgb));
-  background-color: black;
   background: linear-gradient(
       -45deg,
       rgb(var(--background-rgb-1)),
@@ -14,8 +13,8 @@ body {
 }
 
 .upload {
-  height: 80vh;
-  width: 80vw;
+  height: 50vh;
+  width: 50vw;
   position: absolute;
   font-size: 3em;
   text-align: center;
@@ -30,20 +29,20 @@ body {
 }
 
 .box__file {
-  border-radius: 20px;
-  height: 80vh;
-  width: 80vw;
-  padding: 20px;
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  color: rgba(0, 0, 0, 0);
+  height: 100%;
+  width: 100%;
   opacity: 0;
   z-index: 2;
+  cursor: pointer;
 }
 
-.svg-1, .svg-2, .svg-3 {
+.left-arr {
+  position: absolute;
+  cursor: pointer;
+}
+
+.plus, .circle, .check {
   position: relative;
   margin-bottom: 30px;
   height: min(40vh, 40vw);
@@ -54,12 +53,13 @@ body {
   fill: none;
 }
 
-.svg-1 {
+.plus {
   animation: Adding 4s linear infinite;
 }
-.svg-2 {
+.circle {
   stroke-width: 0.5em;
   animation: Loading 2s linear infinite;
+  /* rotate: 5deg; */
 }
 #path1 {
   stroke-dasharray: 400, 600;
@@ -102,15 +102,23 @@ body {
 
 @keyframes Loading {
   0% {
-    stroke-dasharray: 30 600;
+    stroke-dasharray: 10 620;
     stroke-dashoffset: 1410;
   }
+  45% {
+    stroke-dasharray: 580 50;
+    stroke-dashoffset: 1150;
+  }
   50% {
-    stroke-dasharray: 500 130;
+    stroke-dasharray: 580 50;
     stroke-dashoffset: 1100;
   }
+  95% {
+    stroke-dasharray: 10 620;
+    stroke-dashoffset: 200;
+  }
   100% {
-    stroke-dasharray: 30 600;
+    stroke-dasharray: 10 620;
     stroke-dashoffset: 150;
   }
 }
