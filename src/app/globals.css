@@ -22,11 +22,6 @@
   }
 }
 
-/* Mobile */
-@media (max-width: 700px) {
-  
-}
-
 body {
   background-color: rgb(var(--background-rgb));
   color: rgb(var(--foreground-rgb));
@@ -38,19 +33,17 @@ body {
   top: 0;
   height: 50px;
   width: 100%;
-  margin: 0, 0;
-  font-size: 2em;
   background-color: rgb(var(--background-rgb-3));
   display: grid;
-  grid-template-columns: 50px 1fr clamp(150px, 20vw, 300px) 1fr 50px;
+  grid-template-columns: 50px 1fr clamp(150px, 20vw, 300px) 1fr auto;
   align-items: center;
+  z-index: 2;
 }
 
 .title-left {
   margin: 0px 5px;
   justify-self: left;
   display: grid;
-  align-items: center;
   cursor: pointer;
 }
 .title-center {
@@ -60,7 +53,6 @@ body {
   margin: 0px 5px;
   justify-self: right;
   display: grid;
-  align-items: center;
   cursor: pointer;
 }
 
@@ -69,10 +61,8 @@ body {
   stroke-width: 4px;
   stroke: rgb(var(--foreground-rgb));
   stroke-linecap: round;
-  fill: none;
   transition-duration: 250ms;
 }
-
 
 /* Enable hover only on non-touch devices */
 @media (hover: hover) and (pointer: fine) {

@@ -11,8 +11,12 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   const month = useRef<{[id: number]: any[]}>({})
   const [selectedYr, setSelectedYr] = useState<number>(0)
   const [selectedMn, setSelectedMn] = useState<number>(3)
+  const lastClick = useRef<number>(0)
 
-  const menu = useRef<any>(null)
+  const menu = useRef<any>()
+  const menuBackground = useRef<any>()
+  const titleFixed = useRef<any>()
+  const lastSeled = useRef<number[]>([0, 0])
 
   const updateYear = (ind: number) => {
     if (ind >= 3 && ind < year.current.length - 3) {
@@ -27,37 +31,50 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   }
 
   const scrollYr = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (event.deltaY < 0) updateYear(selectedYr - 1)
-    else if (event.deltaY > 0) updateYear(selectedYr + 1)
+    if (lastClick.current < (Date.now() - 50)) {
+      lastClick.current = Date.now()
+      if (event.deltaY < 0) updateYear(selectedYr - 1)
+      else if (event.deltaY > 0) updateYear(selectedYr + 1)
+    }
   }
   const scrollMn = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (event.deltaY < 0) updateMonth(selectedMn - 1)
-    else if (event.deltaY > 0) updateMonth(selectedMn + 1)
-  }
-
-  const openMenu = () => {
-    if (menu.current) {
-      setScroll(false)
-      menu.current.style.transform = 'translateY(0px)'
+    if (lastClick.current < (Date.now() - 50)) {
+      lastClick.current = Date.now()
+      if (event.deltaY < 0) updateMonth(selectedMn - 1)
+      else if (event.deltaY > 0) updateMonth(selectedMn + 1)
     }
   }
 
-  const closeMenu = () => {
-    if (menu.current) {
-      setScroll(true)
-      menu.current.style.transform = 'translateY(-300px)'
-      const ind = yearsLen.current[selectedYr] + selectedMn - 3
-      if (ind !== currPage)
-        updateCurrPage(ind)
-    }
+  const openMenu = (e: any) => {
+    e.stopPropagation()
+    lastSeled.current = [selectedYr, selectedMn]
+    setScroll(false)
+    menuBackground.current.classList.add('visible')
+    menu.current.style.transform = 'translateX(-50%) translateY(0px)'
+    titleFixed.current.style.display = 'inline'
   }
 
-  const check = <svg viewBox='5 5 30 30' className='btn'>
-        <path d="M 17 30 L 30 14"/>
-        <path d="M 10 23 L 17 30"/>
-      </svg>
+  const closeMenu = (e: any) => {
+    e.stopPropagation()
+    setScroll(true)
+    menuBackground.current.classList.remove('visible')
+    menu.current.style.transform = 'translateX(-50%) translateY(-300px)'
+    titleFixed.current.style.display = 'none'
+    const ind = yearsLen.current[selectedYr] + selectedMn - 3
+    if (ind !== currPage)
+      updateCurrPage(ind)
+  }
 
-  useEffect(() => {
+  const disgardMenu = () => {
+    menuBackground.current.classList.remove('visible')
+    menu.current.style.transform = 'translateX(-50%) translateY(-300px)'
+    titleFixed.current.style.display = 'none'
+    setScroll(true)
+    setSelectedYr(lastSeled.current[0])
+    setSelectedMn(lastSeled.current[1])
+  }
+
+  const updateMenu = () => {
     let selYr = 3, selMn = 3, mnInd = 0
     month.current = []
     year.current = [<span key={0}>&nbsp;&nbsp;</span>, <span key={1}>&nbsp;&nbsp;</span>, <span key={2}>&nbsp;&nbsp;</span>]
@@ -84,13 +101,33 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
     year.current = year.current.concat([<span key={0}>&nbsp;&nbsp;</span>, <span key={1}>&nbsp;&nbsp;</span>, <span key={2}>&nbsp;&nbsp;</span>])
     setSelectedYr(selYr)
     setSelectedMn(selMn)
+  }
+
+  const onYear = (e: any, i: number) => {
+    e.stopPropagation()
+    updateYear(i)
+  }
+
+  const onMonth = (e: any, i: number) => {
+    e.stopPropagation()
+    updateMonth(i)
+  }
+
+  useEffect(() => {
+    updateMenu()
   }, [currPage])
+
+  const check = <svg viewBox='5 5 30 30' className='btn'>
+        <path d="M 17 30 L 30 14"/>
+        <path d="M 10 23 L 17 30"/>
+      </svg>
 
   if (month.current[selectedYr]) {
     return (
-      <div className="menu-area">
-        <div className='sel-area' onClick={openMenu}></div>
-
+      <div>
+        <div className="title-fixed" ref={titleFixed}></div>
+        <div className='menu-backgnd' ref={menuBackground} onClick={disgardMenu}></div>
+        <div className='sel-area' onClick={openMenu}>{pages[currPage] ? pages[currPage].year + '-' + pages[currPage].month : ''}</div>
         <div className="dropdown" ref={menu}>
           <div></div>
           <div onClick={closeMenu}>{check}</div>
@@ -102,18 +139,18 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
                   return <div key={i.toString()} className='wheel-sel selable'>{y}</div>
                 if (Math.abs(i - selectedYr) === 1) {
                   if (i < 3 || i >= year.current.length - 3)
-                    return <div key={i.toString()} className='wheel-one' onClick={() => updateYear(i)}>{y}</div>
-                  return <div key={i.toString()} className='wheel-one selable' onClick={() => updateYear(i)}>{y}</div>
+                    return <div key={i.toString()} className='wheel-one'>{y}</div>
+                  return <div key={i.toString()} className='wheel-one selable' onClick={(e) => onYear(e, i)}>{y}</div>
                 }
                 if (Math.abs(i - selectedYr) === 2) {
                   if (i < 3 || i >= year.current.length - 3)
-                    return <div key={i.toString()} className='wheel-two' onClick={() => updateYear(i)}>{y}</div>
-                  return <div key={i.toString()} className='wheel-two selable' onClick={() => updateYear(i)}>{y}</div>
+                    return <div key={i.toString()} className='wheel-two'>{y}</div>
+                  return <div key={i.toString()} className='wheel-two selable' onClick={(e) => onYear(e, i)}>{y}</div>
                 }
                 if (Math.abs(i - selectedYr) === 3) {
                   if (i < 3 || i >= year.current.length - 3)
-                    return <div key={i.toString()} className='wheel-three' onClick={() => updateYear(i)}>{y}</div>
-                  return <div key={i.toString()} className='wheel-three selable' onClick={() => updateYear(i)}>{y}</div>
+                    return <div key={i.toString()} className='wheel-three'>{y}</div>
+                  return <div key={i.toString()} className='wheel-three selable' onClick={(e) => onYear(e, i)}>{y}</div>
                 }
                 else return <div key={i.toString()} className='wheel-rest'>{y}</div>
               })}
@@ -121,26 +158,26 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
           </div>
           <div style={{alignSelf: 'center'}}>-</div>
           <div className="dropdown-content" onWheel={scrollMn}>
-          {month.current[selectedYr].map((y, i) => {
-              if (i === selectedMn)
-                return <div key={i.toString()} className='wheel-sel selable'>{y}</div>
-              if (Math.abs(i - selectedMn) === 1) {
-                if (i < 3)
-                  return <div key={i.toString()} className='wheel-one' onClick={() => updateMonth(i)}>{y}</div>
-                return <div key={i.toString()} className='wheel-one selable' onClick={() => updateMonth(i)}>{y}</div>
-              }
-              if (Math.abs(i - selectedMn) === 2) {
-                if (i < 3)
-                  return <div key={i.toString()} className='wheel-two' onClick={() => updateMonth(i)}>{y}</div>
-                return <div key={i.toString()} className='wheel-two selable' onClick={() => updateMonth(i)}>{y}</div>
-              }
-              if (Math.abs(i - selectedMn) === 3) {
-                if (i < 3)
-                  return <div key={i.toString()} className='wheel-three' onClick={() => updateMonth(i)}>{y}</div>
-                return <div key={i.toString()} className='wheel-three selable' onClick={() => updateMonth(i)}>{y}</div>
-              }
-              else return <div key={i.toString()} className='wheel-rest'>{y}</div>
-          })}
+            {month.current[selectedYr].map((y, i) => {
+                if (i === selectedMn)
+                  return <div key={i.toString()} className='wheel-sel selable'>{y}</div>
+                if (Math.abs(i - selectedMn) === 1) {
+                  if (i < 3)
+                    return <div key={i.toString()} className='wheel-one'>{y}</div>
+                  return <div key={i.toString()} className='wheel-one selable' onClick={(e) => onMonth(e, i)}>{y}</div>
+                }
+                if (Math.abs(i - selectedMn) === 2) {
+                  if (i < 3)
+                    return <div key={i.toString()} className='wheel-two'>{y}</div>
+                  return <div key={i.toString()} className='wheel-two selable' onClick={(e) => onMonth(e, i)}>{y}</div>
+                }
+                if (Math.abs(i - selectedMn) === 3) {
+                  if (i < 3)
+                    return <div key={i.toString()} className='wheel-three'>{y}</div>
+                  return <div key={i.toString()} className='wheel-three selable' onClick={(e) => onMonth(e, i)}>{y}</div>
+                }
+                else return <div key={i.toString()} className='wheel-rest'>{y}</div>
+            })}
           </div>
         </div>
       </div>
@@ -148,7 +185,7 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   }
   else return (
     <div className="menu-area">
-      <div className='sel-area' onClick={openMenu}></div>
+      <div className='sel-area' onClick={openMenu}>{pages[currPage] ? pages[currPage].year + '-' + pages[currPage].month : ''}</div>
     </div>
   )
   

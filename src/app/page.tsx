@@ -12,7 +12,7 @@ export default function Home() {
     setPage((page + 1) % 2)
   }
 
-  const pages = [<Upload key={0} togglePages={togglePages} />, <Browse key={1} togglePages={togglePages} />]
+  const pages = [<Browse key={1} togglePages={togglePages} />, <Upload key={0} togglePages={togglePages} />]
 
   return (
     pages[page]

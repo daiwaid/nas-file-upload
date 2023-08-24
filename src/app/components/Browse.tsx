@@ -28,11 +28,10 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   const prevButton = useRef<any>(null)
   const nextButton = useRef<any>(null)
   const [selected, setSelected] = useState<image>({} as image)
+  const [showViewer, setShowViewer] = useState<boolean>(false)
   const selectedInd = useRef<number[]>([0, 0]) // 0: image index, 1: table index
   const [hideButtons, setHideButtons] = useState<boolean[]>([false, false])
-  const mediaViwer = useRef<any>(null)
-  const scrollable = useRef<boolean>(true)
-  const lastY = useRef<number>(0)
+  const parentDiv = useRef<any>()
   
 
   const lazyLoadImgs = (clear=false) => {
@@ -95,7 +94,7 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
       })
   }
 
-  const fetchImgs = (clear=false, page=loadPage.current, callbackfn=lazyLoadImgs) => {
+  const fetchImgs = (cond=false, page=loadPage.current, callbackfn=lazyLoadImgs): any => {
     fetching.current = true
     const tblName = pages.current[page].name
     if (!images.current[tblName]) {
@@ -109,54 +108,74 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
         }
         images.current[tblName] = imgsCpy
         fetching.current = false
-        callbackfn(clear)
+        return callbackfn(cond)
       })
     }
     else {
       fetching.current = false
-      callbackfn(clear)
+      return callbackfn(cond)
     }
   }
 
-  const getPrev = () => {
+  const getPrev = (preload=false) => {
     // if image is in current page
     if (selectedInd.current[0] > 0 && selected.table) {
       const table = images.current[selected.table]
-      selectedInd.current[0] -= 1
-      setSelected(table[selectedInd.current[0]])
+      if (preload) {
+        new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]-1].thumb
+      }
+      else {
+        selectedInd.current[0] -= 1
+        setSelected(table[selectedInd.current[0]])
+      }
     }
     else if (selectedInd.current[1] > 0) {
       // if prev page is already fetched
       const prevPage = pages.current[selectedInd.current[1] - 1]
       if (images.current[prevPage.name]) {
         const ind = images.current[prevPage.name].length - 1
-        selectedInd.current = [ind, selectedInd.current[1] - 1]
-        setSelected(images.current[prevPage.name][ind])
+        if (preload) {
+          new Image().src = 'http://192.168.1.252' + images.current[prevPage.name][ind].thumb
+        }
+        else {
+          selectedInd.current = [ind, selectedInd.current[1] - 1]
+          setSelected(images.current[prevPage.name][ind])
+        }
       }
       // else fetch page and try again
       else {
-        fetchImgs(false, selectedInd.current[1] - 1, getNext)
+        fetchImgs(preload, selectedInd.current[1] - 1, getNext)
       }
     }
   }
 
-  const getNext = () => {
+  const getNext = (preload=false) => {
     const table = selected.table ? images.current[selected.table] : undefined
     // if image is in current page
     if (table && selectedInd.current[0] < table.length - 1) {
-      selectedInd.current[0] += 1
-      setSelected(table[selectedInd.current[0]])
+      if (preload) {
+        new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]+1].thumb
+      }
+      else {
+        selectedInd.current[0] += 1
+        setSelected(table[selectedInd.current[0]])
+      }
     }
     else if (selectedInd.current[1] < pages.current.length - 1) {
       // if next page already fetched
       const nextPage = pages.current[selectedInd.current[1] + 1]
       if (images.current[nextPage.name]) {
-        selectedInd.current = [0, selectedInd.current[1] + 1]
-        setSelected(images.current[nextPage.name][0])
+        if (preload) {
+          new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].thumb
+        }
+        else {
+          selectedInd.current = [0, selectedInd.current[1] + 1]
+          setSelected(images.current[nextPage.name][0])
+        }
       }
       // else fetch page and try again
       else {
-        fetchImgs(false, selectedInd.current[1] + 1, getNext)
+        fetchImgs(preload, selectedInd.current[1] + 1, getNext)
       }
     }
   }
@@ -187,10 +206,10 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   // add scroll event listener
   useEffect(() => {
     document.addEventListener('scroll', onScroll)
-    window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', onResize)
     return () => {
       document.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('resize', onResize)
     }
   }, [columns, currPage])
 
@@ -211,8 +230,8 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
 
   const updateCurrPage = (ind: number) => {
     if (ind >= 0 && ind < pages.current.length) {
-      setCurrPage(ind)
       loadPage.current = ind
+      setCurrPage(ind)
       fetchImgs(true)
     }
   }
@@ -230,14 +249,18 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   }
 
   const setScroll = (state: boolean) => {
-    scrollable.current = state
-    if (!state) lastY.current = window.scrollY
+    if (!state) {
+      document.documentElement.style.overflowY = 'hidden'
+      parentDiv.current.style.overflowY = 'scroll'
+
+    }
+    else {
+      document.documentElement.style.overflowY = 'auto'
+      parentDiv.current.style.overflowY = 'visible'
+    }
   }
 
   const onScroll = () => {
-    if (!scrollable.current) {
-      window.scrollTo(0, lastY.current)
-    }
     if (window.scrollY === 0 || Math.abs(window.scrollY - lastScroll.current) > 100) {
       updateHeader()
       lazyLoadImgs()
@@ -245,7 +268,7 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     }
   }
 
-  const onSelect = (img: image) => {
+  const onSelect = (ref: any, img: image) => {
     // get index of curr image
     if (img.table) {
       const table = images.current[img.table]
@@ -263,22 +286,32 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
       }
     }
 
-    if (mediaViwer.current) {
-      mediaViwer.current.style.display = 'inline'
-    }
-    document.documentElement.style.overflow = 'hidden'
+    // ref.style.visibility = 'hidden'
+
+    // setTimeout(() => {ref.style.visibility = 'visible'}, 2000)
+    // console.log(ref.getBoundingClientRect())
 
     setSelected(img)
+    setShowViewer(true)
   }
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'ArrowLeft') getPrev()
-    else if (event.key === 'ArrowRight') getNext()
-    else if (event.key === 'Escape') setSelected({} as image)
-
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (selected.id) {
+      if (event.key === 'ArrowLeft') {
+        getPrev(false)
+        getPrev(true)
+      }
+      else if (event.key === 'ArrowRight') {
+        getNext(false)
+        getNext(true)
+      }
+      else if (event.key === 'Escape') {
+        closeViewer()
+      }
+    }
   }
 
-  const handleResize = () => {
+  const onResize = () => {
     if (Math.abs(lastWindow.current - window.innerWidth) > 100) {
       if (window.innerWidth < 700) numCols.current = 2
       else if (window.innerWidth < 1120) numCols.current = 3
@@ -302,9 +335,14 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     setHideButtons(hide)
   }
 
+  const closeViewer = () => {
+    updateCurrPage(selectedInd.current[1])
+    setShowViewer(false)
+    document.documentElement.style.overflow = 'auto'
+  }
+
   const arrow = <svg viewBox='0 0 50 50' className='btn'>
-                  <path d="M 15 10 L 30 25"/>
-                  <path d="M 15 40 L 30 25"/>
+                  <path d="M 15 10 L 30 25 M 30 25 L 15 40"/>
                 </svg>
 
   const upload = <svg viewBox='0 0 50 50' className='btn'>
@@ -313,26 +351,23 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
                 </svg>
 
   return (
-    <div onKeyDown={handleKeyDown} tabIndex={-1}>
+    <div className='falsescroll' ref={parentDiv} onKeyDown={onKeyDown} tabIndex={-1}>
       <div className="title">
         <div className='title-left'></div>
-        <div className='title-right' ref={prevButton} onClick={() => updateCurrPage(currPage + 1)} style={{rotate: '180deg'}}>{arrow}</div>
-        <div className='title-center'>
-          {pages.current[currPage] ? pages.current[currPage].year + '-' + pages.current[currPage].month : ''}
-        </div>
-        <div className='title-left' ref={nextButton} onClick={() => updateCurrPage(currPage - 1)}>{arrow}</div>
+        <div className='title-right' ref={nextButton} onClick={() => updateCurrPage(currPage - 1)} style={{rotate: '180deg'}}>{arrow}</div>
+        
+        <PageMenu pages={pages.current} currPage={currPage} updateCurrPage={updateCurrPage} setScroll={setScroll}/>
+        <div className='title-left' ref={prevButton} onClick={() => updateCurrPage(currPage + 1)}>{arrow}</div>
         <div className='title-right' onClick={togglePages}>{upload}</div>
       </div>
-      <PageMenu pages={pages.current} currPage={currPage} updateCurrPage={updateCurrPage} setScroll={setScroll}/>
-      <MediaViewer selected={selected} setSelected={setSelected} getPrev={getPrev} getNext={getNext} hideButtons={hideButtons} />
+      {showViewer ? <MediaViewer selected={selected} closeViewer={closeViewer} getPrev={getPrev} getNext={getNext} hideButtons={hideButtons} /> : <></>}
       <div className="grid">
         {columns.map(((col, i) =>
           <div key={i} className='column'>
-            {col.map(img => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={() => onSelect(img)} />)}
+            {col.map((img) => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={(e) => onSelect(e.currentTarget, img)} />)}
           </div>
         ))}
       </div>
     </div>
-    
   )
 }
