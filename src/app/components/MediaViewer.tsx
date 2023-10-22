@@ -4,9 +4,9 @@ import { Dispatch, useEffect, useRef, useState } from 'react'
 import { image } from '../Types'
 import './mediaViewer.css'
 
-export default function MediaViewer({ selected, closeViewer, getPrev, getNext, hideButtons }: 
+export default function MediaViewer({ selected, closeViewer, getPrev, getNext, removeImg, hideButtons }: 
                         { selected: image, closeViewer: () => void, getPrev: (preload: boolean) => void, 
-                          getNext: (preload: boolean) => void, hideButtons: boolean[]}) {
+                          getNext: (preload: boolean, fillImg?: boolean) => void, removeImg: () => void, hideButtons: boolean[]}) {
 
   const [fullscreen, setFullscreen] = useState<boolean>(false)
   const [slideshow, setSlideshow] = useState<boolean>(false)
@@ -34,20 +34,13 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, h
     getPrev(true)
   }
 
-  const loadNext = () => {
+  const loadNext = (fullImg=false) => {
     getNext(false)
-    getNext(true)
+    getNext(true, fullImg)
   }
 
   const loaded = () => {
     imgContainer.current.classList.add('loaded')
-  }
-
-  const toggleFullScreen = () => {
-    if (!document.fullscreenElement)
-      document.documentElement.requestFullscreen()
-    else
-      document.exitFullscreen()
   }
 
   const onMouse = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -63,16 +56,19 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, h
   }
 
   const toggleSlide = () => {
-    if (slideshow) {
-      if (slideInterval.current) clearInterval(slideInterval.current)
-      setSlideshow(false)
-    }
-    else {
-      slideInterval.current = setInterval(() => {
-        loadNext()
-      }, 3000)
-      setSlideshow(true)
-    }
+    setSlideshow(!slideshow)
+  }
+
+  const slide = () => {
+    console.log(slideshow)
+    if (slideshow) loadNext(true)
+  }
+  
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement)
+      document.documentElement.requestFullscreen()
+    else
+      document.exitFullscreen()
   }
 
   const onFullscreen = () => {
@@ -97,11 +93,34 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, h
     }
   }
 
-  const fullscrBtn = () => {
+  const trashBtn = () => {
+    if (document.documentElement.requestFullscreen !== undefined) {
+      return trash
+    }
+    return
+  }
+
+  const slideBtn = () => {
+    if (document.documentElement.requestFullscreen !== undefined) {
+      return play
+    }
+    return
+  }
+
+
+  // full screen on desktop, trash on mobile
+  const rightBtn = () => {
     if (document.documentElement.requestFullscreen !== undefined) {
       return fullscreen ? arrIn : arrOut
     }
-    return
+    return trash
+  }
+
+  const rightBtnFn = () => {
+    if (document.documentElement.requestFullscreen !== undefined) {
+      return toggleFullScreen
+    }
+    return removeImg
   }
 
   useEffect(() => {
@@ -110,6 +129,13 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, h
       document.removeEventListener('fullscreenchange', onFullscreen)
     }
   }, [])
+
+  useEffect(() => {
+    let id = setInterval(slide, 3000)
+    return () => {
+      clearInterval(id)
+    }
+  }, [selected, slideshow])
 
   if (lBttn.current) {
     if (hideButtons[0]) {
@@ -139,8 +165,8 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, h
             </svg>
   
   const arrow = <svg viewBox='0 0 50 50' className='btn'>
-                  <path d="M 15 10 L 30 25"/>
-                  <path d="M 30 25 L 15 40"/>
+                  <path d="M 15 10 L 35 25"/>
+                  <path d="M 15 40 L 35 25"/>
                 </svg>
 
   const arrOut = <svg viewBox='0 0 50 50' className='btn'>
@@ -154,9 +180,17 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, h
                 </svg>
   
   const play = <svg viewBox='0 0 50 50' className={slideshow ? 'btn fill' : 'btn'}>
-                <path stroke='none' d="M 12 12 L 12 38 L 33 25 L 12 12"/>
-                <path d="M 10 10 L 10 40 M 10 40 L 35 25 M 35 25 L 10 10"/>
+                <path stroke='none' d="M 17 12 L 17 38 L 38 25 L 17 12"/>
+                <path d="M 15 10 L 15 40 M 15 40 L 40 25 M 40 25 L 15 10"/>
               </svg>
+  
+  const trash = <svg viewBox='0 0 50 50' className='btn'>
+                  <path d="M 39 12 L 36 43 L 14 43 L 11 12" />
+                  <path d="M 10 12 L 40 12"/>
+                  <path d="M 20 21 L 21 35"/>
+                  <path d="M 30 21 L 29 35"/>
+                  <path d="M 16 7 L 34 7"/>
+                </svg>
 
   if (selected.name) {
     document.documentElement.style.overflow = 'hidden'
@@ -172,17 +206,23 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, h
     return (
       <div className='viewer' onMouseMove={onMouse}>
         <div className='title' ref={titleBar}>
-          <div className='title-left' onClick={hideViewer} style={{rotate: '45deg'}}>{ex}</div>
-          <div className='title-right' ref={lBttn} onClick={loadPrev} style={{rotate: '180deg'}}>{arrow}</div>
+          <div className='title-left'>
+            <div className='item-left' onClick={hideViewer} style={{rotate: '45deg'}}>{ex}</div>
+            <div className='item-right' ref={lBttn} onClick={loadPrev} style={{rotate: '180deg'}}>{arrow}</div>
+          </div>
           <div className='title-center-mv'>
             <div className='date-text'>{formatDate}</div>
             <div className='time-text'>{formatTime}</div>
             </div>
-          <div className="title-right-mv">
-            <div className='title-left' ref={rBttn} onClick={loadNext}>{arrow}</div>
-            <div className='title-right' onClick={toggleSlide}>{play}</div>
+          <div className="title-right">
+            <div className='item-left' ref={rBttn} onClick={() => loadNext()}>{arrow}</div>
+            <div className="title-right-mv">
+              <div></div>
+              <div className='item-right' onClick={removeImg}>{trashBtn()}</div>
+              <div className='item-right' onClick={toggleSlide}>{slideBtn()}</div>
+              <div className='item-right' onClick={rightBtnFn()}>{rightBtn()}</div>
+            </div>
           </div>
-          <div className='title-right' onClick={toggleFullScreen}>{fullscrBtn()}</div>
         </div>
         <div className='img-container' ref={imgContainer} style={{backgroundImage: 'url(' + 'http://192.168.1.252' + selected.thumb + ')'}}>
           <img key={selected.path} src={'http://192.168.1.252' + selected.path} onLoad={loaded} />

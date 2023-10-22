@@ -94,10 +94,10 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
       })
   }
 
-  const fetchImgs = (cond=false, page=loadPage.current, callbackfn=lazyLoadImgs): any => {
+  const fetchImgs = (cond=false, page=loadPage.current, callbackfn=lazyLoadImgs, force=false): any => {
     fetching.current = true
     const tblName = pages.current[page].name
-    if (!images.current[tblName]) {
+    if (force || !images.current[tblName]) {
       const p = axios.get('http://192.168.1.252/serve.php?name=' + pages.current[page].name)
       p.then(r => {
         const imgs: image[] = Object.values(r.data);
@@ -122,7 +122,8 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     if (selectedInd.current[0] > 0 && selected.table) {
       const table = images.current[selected.table]
       if (preload) {
-        new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]-1].thumb
+        if (table[selectedInd.current[0]-1])
+          new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]-1].thumb
       }
       else {
         selectedInd.current[0] -= 1
@@ -149,16 +150,20 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     }
   }
 
-  const getNext = (preload=false) => {
+  const getNext = (preload=false, fullImg=false, increment=true) => {
     const table = selected.table ? images.current[selected.table] : undefined
     // if image is in current page
     if (table && selectedInd.current[0] < table.length - 1) {
       if (preload) {
-        new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]+1].thumb
+        if (fullImg)
+          new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]+1].path
+        else
+          new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]+1].thumb
       }
       else {
-        selectedInd.current[0] += 1
-        setSelected(table[selectedInd.current[0]])
+        const nextInd = selectedInd.current[0] + 1
+        if (increment) selectedInd.current[0] = nextInd
+        setSelected(table[nextInd])
       }
     }
     else if (selectedInd.current[1] < pages.current.length - 1) {
@@ -166,7 +171,10 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
       const nextPage = pages.current[selectedInd.current[1] + 1]
       if (images.current[nextPage.name]) {
         if (preload) {
-          new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].thumb
+          if (fullImg)
+            new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].path
+          else
+            new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].thumb
         }
         else {
           selectedInd.current = [0, selectedInd.current[1] + 1]
@@ -177,6 +185,19 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
       else {
         fetchImgs(preload, selectedInd.current[1] + 1, getNext)
       }
+    }
+  }
+
+  // remove the currently selected image
+  const removeImg = () => {
+    if (selected && selected.table) {
+      getNext(false, false, false)
+      axios.post('http://192.168.1.252/remove.php', {
+        table: selected.table,
+        name: selected.name
+      }).then(
+        r => fetchImgs(false, selectedInd.current[1], ()=>{}, true)
+      )
     }
   }
 
@@ -286,11 +307,6 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
       }
     }
 
-    // ref.style.visibility = 'hidden'
-
-    // setTimeout(() => {ref.style.visibility = 'visible'}, 2000)
-    // console.log(ref.getBoundingClientRect())
-
     setSelected(img)
     setShowViewer(true)
   }
@@ -342,7 +358,8 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   }
 
   const arrow = <svg viewBox='0 0 50 50' className='btn'>
-                  <path d="M 15 10 L 30 25 M 30 25 L 15 40"/>
+                  <path d="M 15 10 L 35 25"/>
+                  <path d="M 15 40 L 35 25"/>
                 </svg>
 
   const upload = <svg viewBox='0 0 50 50' className='btn'>
@@ -353,14 +370,17 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   return (
     <div className='falsescroll' ref={parentDiv} onKeyDown={onKeyDown} tabIndex={-1}>
       <div className="title">
-        <div className='title-left'></div>
-        <div className='title-right' ref={nextButton} onClick={() => updateCurrPage(currPage - 1)} style={{rotate: '180deg'}}>{arrow}</div>
-        
+        <div className='title-left'>
+          <div className='item-left'></div>
+          <div className='item-right' ref={nextButton} onClick={() => updateCurrPage(currPage - 1)} style={{rotate: '180deg'}}>{arrow}</div>
+        </div>
         <PageMenu pages={pages.current} currPage={currPage} updateCurrPage={updateCurrPage} setScroll={setScroll}/>
-        <div className='title-left' ref={prevButton} onClick={() => updateCurrPage(currPage + 1)}>{arrow}</div>
-        <div className='title-right' onClick={togglePages}>{upload}</div>
+        <div className='title-right'>
+          <div className='item-left' ref={prevButton} onClick={() => updateCurrPage(currPage + 1)}>{arrow}</div>
+          <div className='item-right' onClick={togglePages}>{upload}</div>
+        </div>
       </div>
-      {showViewer ? <MediaViewer selected={selected} closeViewer={closeViewer} getPrev={getPrev} getNext={getNext} hideButtons={hideButtons} /> : <></>}
+      {showViewer ? <MediaViewer selected={selected} closeViewer={closeViewer} getPrev={getPrev} getNext={getNext} removeImg={removeImg} hideButtons={hideButtons} /> : <></>}
       <div className="grid">
         {columns.map(((col, i) =>
           <div key={i} className='column'>

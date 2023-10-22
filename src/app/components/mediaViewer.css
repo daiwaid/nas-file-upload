@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgb(var(--background-rgb));
+  background-color: rgb(0, 0, 0);
   z-index: 2;
 }
 
@@ -18,7 +18,7 @@
 }
 
 .viewer .title.fullscreen.hidden {
-  top: -50px;
+  top: -55px;
 }
 
 .img-container {
@@ -54,16 +54,16 @@
 
 .title-right-mv {
   display: grid;
-  grid-template-columns: 1fr 50px;
-  align-items: center;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: right;
 }
 
 .date-text {
-  font-size: 22px;
+  font-size: 1.4rem;
 }
 
 .time-text {
-  font-size: 14px;
+  font-size: 1rem;
   opacity: 0.8;
 }
 

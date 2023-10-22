@@ -29,7 +29,7 @@ function saveFile($tmp_path, $path, $conn, $tbl_name, $file_date=-1, $number=0) 
 
     if (file_exists($new_path)) {
 		// if size difference is small, assume it's the same
-        if (abs(filesize($tmp_path) - filesize($new_path)) < min(0.1 * filesize($tmp_path), 0.1 * filesize($new_path))) {
+        if (abs(filesize($tmp_path) - filesize($new_path)) < min(0.5 * filesize($tmp_path), 0.5 * filesize($new_path))) {
 			return;
 		}
 		saveFile($tmp_path, $path, $conn, $tbl_name, $file_date, $number+1);

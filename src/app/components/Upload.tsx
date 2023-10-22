@@ -14,7 +14,7 @@ export default function Upload({ togglePages }: { togglePages: () => void }) {
     for (let i = 0; i < files.length; i++) {
       formData.append('files[]', files[i])
       if (i % 20 == 19 || i == files.length-1) {
-        await fetch('/process.php', {method: "POST", body: formData})
+        await fetch('http://192.168.1.252/process.php', {method: "POST", body: formData})
         formData = new FormData()
       }
     }
@@ -33,10 +33,10 @@ export default function Upload({ togglePages }: { togglePages: () => void }) {
       setTimeout(() => setStatus('Upload'), 2000)
     })
   }
-
+  
   const arrow = <svg viewBox='0 0 50 50' className='btn'>
-                  <path d="M 15 10 L 30 25"/>
-                  <path d="M 15 40 L 30 25"/>
+                  <path d="M 15 10 L 35 25"/>
+                  <path d="M 15 40 L 35 25"/>
                 </svg>
 
   return (

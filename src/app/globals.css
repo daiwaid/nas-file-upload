@@ -5,8 +5,9 @@
   --background-rgb-2: 231, 60, 126;
   --background-rgb-3: 35, 166, 213;
   --background-rgb-4: 35, 213, 171;
-  --background-rgb: 255, 255, 255;
+  --background-rgb: 200, 200, 200;
   --select-rgb: 220, 220, 220;
+  --title-rgb: 35, 166, 213;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +20,7 @@
     --background-rgb-4: 0, 41, 11;
     --background-rgb: 0, 0, 0;
     --select-rgb: 70, 70, 70;
+    --title-rgb: 5, 0, 30;
   }
 }
 
@@ -33,23 +35,32 @@ body {
   top: 0;
   height: 50px;
   width: 100%;
-  background-color: rgb(var(--background-rgb-3));
+  background-color: rgb(var(--title-rgb));
   display: grid;
-  grid-template-columns: 50px 1fr clamp(150px, 20vw, 300px) 1fr auto;
+  grid-template-columns: 1fr clamp(150px, 20vw, 300px) 1fr;
   align-items: center;
   z-index: 2;
 }
 
 .title-left {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.title-right {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.item-left {
   margin: 0px 5px;
   justify-self: left;
   display: grid;
   cursor: pointer;
 }
-.title-center {
+.item-center {
   justify-self: center;
 }
-.title-right {
+.item-right {
   margin: 0px 5px;
   justify-self: right;
   display: grid;
@@ -62,6 +73,7 @@ body {
   stroke: rgb(var(--foreground-rgb));
   stroke-linecap: round;
   transition-duration: 250ms;
+  fill: none;
 }
 
 /* Enable hover only on non-touch devices */
