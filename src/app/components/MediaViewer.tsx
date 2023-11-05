@@ -1,8 +1,9 @@
 'use client'
 
-import { Dispatch, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { image } from '../Types'
 import './mediaViewer.css'
+import DeleteBtn from './DeleteBtn'
 
 export default function MediaViewer({ selected, closeViewer, getPrev, getNext, removeImg, hideButtons }: 
                         { selected: image, closeViewer: () => void, getPrev: (preload: boolean) => void, 
@@ -10,7 +11,6 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, r
 
   const [fullscreen, setFullscreen] = useState<boolean>(false)
   const [slideshow, setSlideshow] = useState<boolean>(false)
-  const slideInterval = useRef<NodeJS.Timer>()
   const interval = useRef<NodeJS.Timer>()
   const hidden = useRef<boolean>(false)
   const fullscrTime = useRef<number>(0)
@@ -60,7 +60,6 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, r
   }
 
   const slide = () => {
-    console.log(slideshow)
     if (slideshow) loadNext(true)
   }
   
@@ -93,34 +92,11 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, r
     }
   }
 
-  const trashBtn = () => {
-    if (document.documentElement.requestFullscreen !== undefined) {
-      return trash
-    }
-    return
-  }
-
-  const slideBtn = () => {
-    if (document.documentElement.requestFullscreen !== undefined) {
-      return play
-    }
-    return
-  }
-
-
   // full screen on desktop, trash on mobile
-  const rightBtn = () => {
+  const fullScrBtn = () => {
     if (document.documentElement.requestFullscreen !== undefined) {
       return fullscreen ? arrIn : arrOut
     }
-    return trash
-  }
-
-  const rightBtnFn = () => {
-    if (document.documentElement.requestFullscreen !== undefined) {
-      return toggleFullScreen
-    }
-    return removeImg
   }
 
   useEffect(() => {
@@ -138,25 +114,17 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, r
   }, [selected, slideshow])
 
   if (lBttn.current) {
-    if (hideButtons[0]) {
-      lBttn.current.style.opacity = 0
-      lBttn.current.style.cursor = 'default'
-    }
-    else {
-      lBttn.current.style.opacity = 1
-      lBttn.current.style.cursor = 'pointer'
-    }
+    if (hideButtons[0])
+      lBttn.current.classList.add('inactive')
+    else
+      lBttn.current.classList.remove('inactive')
   }
 
   if (rBttn.current) {
-    if (hideButtons[1]) {
-      rBttn.current.style.opacity = 0
-      rBttn.current.style.cursor = 'default'
-    }
-    else {
-      rBttn.current.style.opacity = 1
-      rBttn.current.style.cursor = 'pointer'
-    }
+    if (hideButtons[1])
+      rBttn.current.classList.add('inactive')
+    else
+      rBttn.current.classList.remove('inactive')
   }
 
   const ex = <svg viewBox='0 0 50 50' className='btn'>
@@ -169,17 +137,17 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, r
                   <path d="M 15 40 L 35 25"/>
                 </svg>
 
-  const arrOut = <svg viewBox='0 0 50 50' className='btn'>
+  const arrOut = <svg viewBox='0 0 50 50' className='btn nonmobile'>
                     <path d="M 24 11 L 38 12 M 38 12 L 39 26"/>
                     <path d="M 11 24 L 12 38 M 12 38 L 26 39"/>
                   </svg>
   
-  const arrIn = <svg viewBox='0 0 50 50' className='btn'>
+  const arrIn = <svg viewBox='0 0 50 50' className='btn nonmobile'>
                   <path d="M 28 7 L 29 21 M 29 21 L 43 22"/>
                   <path d="M 7 28 L 21 29 M 21 29 L 22 43"/>
                 </svg>
   
-  const play = <svg viewBox='0 0 50 50' className={slideshow ? 'btn fill' : 'btn'}>
+  const play = <svg viewBox='0 0 50 50' className={slideshow ? 'btn fill  nonmobile' : 'btn nonmobile'}>
                 <path stroke='none' d="M 17 12 L 17 38 L 38 25 L 17 12"/>
                 <path d="M 15 10 L 15 40 M 15 40 L 40 25 M 40 25 L 15 10"/>
               </svg>
@@ -216,16 +184,18 @@ export default function MediaViewer({ selected, closeViewer, getPrev, getNext, r
             </div>
           <div className="title-right">
             <div className='item-left' ref={rBttn} onClick={() => loadNext()}>{arrow}</div>
-            <div className="title-right-mv">
+            <div className="title-right-grid">
               <div></div>
-              <div className='item-right' onClick={removeImg}>{trashBtn()}</div>
-              <div className='item-right' onClick={toggleSlide}>{slideBtn()}</div>
-              <div className='item-right' onClick={rightBtnFn()}>{rightBtn()}</div>
+              <DeleteBtn removeImg={removeImg} />
+              <div className='item-right' onClick={toggleSlide}>{play}</div>
+              <div className='item-right' onClick={toggleFullScreen}>{fullScrBtn()}</div>
             </div>
           </div>
         </div>
         <div className='img-container' ref={imgContainer} style={{backgroundImage: 'url(' + 'http://192.168.1.252' + selected.thumb + ')'}}>
-          <img key={selected.path} src={'http://192.168.1.252' + selected.path} onLoad={loaded} />
+          {window.innerHeight < window.innerWidth
+            ? <img key={selected.path} src={'http://192.168.1.252' + selected.path} onLoad={loaded} style={{minHeight: '100%', width: 'auto'}} />
+            : <img key={selected.path} src={'http://192.168.1.252' + selected.path} onLoad={loaded} style={{minWidth: '100%', height: 'auto'}} />}
         </div>
       </div>
     )

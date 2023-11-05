@@ -50,12 +50,16 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
+.title-right-grid {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: right;
+}
 
 .item-left {
   margin: 0px 5px;
   justify-self: left;
   display: grid;
-  cursor: pointer;
 }
 .item-center {
   justify-self: center;
@@ -64,7 +68,6 @@ body {
   margin: 0px 5px;
   justify-self: right;
   display: grid;
-  cursor: pointer;
 }
 
 .btn {
@@ -72,8 +75,15 @@ body {
   stroke-width: 4px;
   stroke: rgb(var(--foreground-rgb));
   stroke-linecap: round;
-  transition-duration: 250ms;
   fill: none;
+  opacity: 1;
+  cursor: pointer;
+  transition-duration: 250ms;
+}
+
+.inactive .btn {
+  opacity: 0.2;
+  cursor: default;
 }
 
 /* Enable hover only on non-touch devices */
@@ -81,6 +91,11 @@ body {
   .btn:hover {
     stroke-width: 5px;
     stroke: rgb(var(--highlight-rgb));
+    transition-duration: 250ms;
+  }
+  .inactive .btn:hover {
+    stroke-width: 4px;
+    stroke: rgb(var(--foreground-rgb));
     transition-duration: 250ms;
   }
 }

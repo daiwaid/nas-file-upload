@@ -52,12 +52,6 @@
   text-align: center;
 }
 
-.title-right-mv {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: right;
-}
-
 .date-text {
   font-size: 1.4rem;
 }

@@ -1,0 +1,16 @@
+.delete-menu {
+  position: relative;
+  width: 50px;
+}
+
+.delete-dropdown {
+  position: fixed;
+  width: 50px;
+  background-color: rgb(var(--title-rgb));
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  text-align: center;
+  transform: translateY(-150px);
+  transition-duration: 250ms;
+}

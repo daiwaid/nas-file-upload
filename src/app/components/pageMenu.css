@@ -91,11 +91,6 @@
   background-color: rgb(var(--select-rgb));
 }
 
-.dropdown .btn {
-  cursor: pointer;
-  width: 30px;
-}
-
 /* Mobile */
 @media (max-width: 700px) {
   .dropdown {

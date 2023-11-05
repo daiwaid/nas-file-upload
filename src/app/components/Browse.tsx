@@ -21,12 +21,15 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   const [columns, setColumns] = useState<image[][]>([])
   const columnHeights = useRef<number[]>([])
   const numCols = useRef<number>(4)
+  const [colFlex, setColFlex] = useState<number>(100)
 
   const fetching = useRef<boolean>(false)
   const lastScroll = useRef<number>(0)
   const lastWindow = useRef<number>(0)
   const prevButton = useRef<any>(null)
   const nextButton = useRef<any>(null)
+  const zoomIn = useRef<any>(null)
+  const zoomOut = useRef<any>(null)
   const [selected, setSelected] = useState<image>({} as image)
   const [showViewer, setShowViewer] = useState<boolean>(false)
   const selectedInd = useRef<number[]>([0, 0]) // 0: image index, 1: table index
@@ -201,29 +204,6 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     }
   }
 
-  useEffect(() => {
-    if (nextButton.current) {
-      if (currPage === 0) {
-        nextButton.current.style.opacity = 0
-        nextButton.current.style.cursor = 'default'
-      }
-      else {
-        nextButton.current.style.opacity = 1
-        nextButton.current.style.cursor = 'pointer'
-      }
-    }
-    if (prevButton.current) {
-      if (currPage === pages.current.length-1) {
-        prevButton.current.style.opacity = 0
-        prevButton.current.style.cursor = 'default'
-      }
-      else {
-        prevButton.current.style.opacity = 1
-        prevButton.current.style.cursor = 'pointer'
-      }
-    }
-  }, [currPage])
-
   // add scroll event listener
   useEffect(() => {
     document.addEventListener('scroll', onScroll)
@@ -242,10 +222,40 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     showHideButtons()
   }, [selected])
 
+  useEffect(() => {
+    if (nextButton.current) {
+      if (currPage === 0)
+        nextButton.current.classList.add('inactive')
+      else
+        nextButton.current.classList.remove('inactive')
+    }
+    if (prevButton.current) {
+      if (currPage === pages.current.length-1)
+        prevButton.current.classList.add('inactive')
+      else
+        prevButton.current.classList.remove('inactive')
+    }
+  }, [currPage])
+
+  useEffect(() => {
+    if (numCols.current === 1)
+      zoomIn.current.classList.add('inactive')
+    else
+      zoomIn.current.classList.remove('inactive')
+    if (numCols.current === 7)
+      zoomOut.current.classList.add('inactive')
+    else
+      zoomOut.current.classList.remove('inactive')
+  }, [colFlex])
+
   // loads images on page start
   useEffect(() => {
-    if (window.innerWidth < 800) numCols.current = 2
+    if (window.innerWidth < 700) numCols.current = 1
+    else if (window.innerWidth < 1120) numCols.current = 2
+    else if (window.innerWidth < 1600) numCols.current = 3
+    else numCols.current = 4
     lastWindow.current = window.innerWidth
+    setColFlex(1/numCols.current * 100)
     fetchPages()
   }, [])
 
@@ -327,14 +337,22 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     }
   }
 
-  const onResize = () => {
-    if (Math.abs(lastWindow.current - window.innerWidth) > 100) {
-      if (window.innerWidth < 700) numCols.current = 2
-      else if (window.innerWidth < 1120) numCols.current = 3
-      else numCols.current = 4
+  const setNumCols = (cols: number) => {
+    if (cols > 0 && cols < 8 && numCols.current !== cols) {
+      numCols.current = cols
       loadPage.current = currPage
       lastWindow.current = window.innerWidth
+      setColFlex(1/cols * 100)
       fetchImgs(true)
+    }
+  }
+
+  const onResize = () => {
+    if (Math.abs(lastWindow.current - window.innerWidth) > 50) {
+      if (window.innerWidth < 700) setNumCols(1)
+      else if (window.innerWidth < 1120) setNumCols(2)
+      else if (window.innerWidth < 1600) setNumCols(3)
+      else setNumCols(4)
     }
   }
 
@@ -352,10 +370,11 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   }
 
   const closeViewer = () => {
-    updateCurrPage(selectedInd.current[1])
+    // updateCurrPage(selectedInd.current[1])
     setShowViewer(false)
     document.documentElement.style.overflow = 'auto'
   }
+
 
   const arrow = <svg viewBox='0 0 50 50' className='btn'>
                   <path d="M 15 10 L 35 25"/>
@@ -366,6 +385,18 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
                   <path d="M 10 25 L 40 25"/>
                   <path d="M 25 10 L 25 40"/>
                 </svg>
+  
+  const magnifyUp = <svg viewBox='0 0 50 50' className='btn nonmobile'>
+                      <circle cx='25' cy='25' r='14' />
+                      <path d='M 34.9 34.9 L 40 40' />
+                      <path d="M 19 25 L 31 25"/>
+                      <path d="M 25 19 L 25 31"/>
+                    </svg>
+  const magnifyDown = <svg viewBox='0 0 50 50' className='btn nonmobile'>
+                        <circle cx='25' cy='25' r='14' />
+                        <path d='M 34.9 34.9 L 40 40' />
+                        <path d="M 19 25 L 31 25"/>
+                      </svg>
 
   return (
     <div className='falsescroll' ref={parentDiv} onKeyDown={onKeyDown} tabIndex={-1}>
@@ -377,13 +408,17 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
         <PageMenu pages={pages.current} currPage={currPage} updateCurrPage={updateCurrPage} setScroll={setScroll}/>
         <div className='title-right'>
           <div className='item-left' ref={prevButton} onClick={() => updateCurrPage(currPage + 1)}>{arrow}</div>
-          <div className='item-right' onClick={togglePages}>{upload}</div>
+          <div className='title-right-grid'>
+            <div className='item-right' ref={zoomIn} onClick={() => setNumCols(numCols.current-1)}>{magnifyUp}</div>
+            <div className='item-right' ref={zoomOut} onClick={() => setNumCols(numCols.current+1)}>{magnifyDown}</div>
+            <div className='item-right' onClick={togglePages}>{upload}</div>
+          </div>
         </div>
       </div>
       {showViewer ? <MediaViewer selected={selected} closeViewer={closeViewer} getPrev={getPrev} getNext={getNext} removeImg={removeImg} hideButtons={hideButtons} /> : <></>}
       <div className="grid">
         {columns.map(((col, i) =>
-          <div key={i} className='column'>
+          <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`}}>
             {col.map((img) => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={(e) => onSelect(e.currentTarget, img)} />)}
           </div>
         ))}
