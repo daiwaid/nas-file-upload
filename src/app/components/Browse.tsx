@@ -6,8 +6,9 @@ import MediaViewer from './MediaViewer'
 import { image, table } from '../Types'
 import './browse.css'
 import PageMenu from './PageMenu'
+import Upload from './Upload'
 
-export default function Browse({ togglePages }: { togglePages: () => void }) {
+export default function Browse() {
 
   const pages = useRef<table[]>([])
   const [currPage, setCurrPage] = useState<number>(2)
@@ -22,19 +23,20 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   const columnHeights = useRef<number[]>([])
   const numCols = useRef<number>(4)
   const [colFlex, setColFlex] = useState<number>(100)
-
+  const [showViewer, setShowViewer] = useState<boolean>(false)
+  const [selectedInd, setSelectedInd] = useState<number[]>([0, 0]) // 0: image index, 1: table index
+  const [aspectRatio, setAspectRatio] = useState<number>(1)
+  
   const fetching = useRef<boolean>(false)
   const lastScroll = useRef<number>(0)
-  const lastWindow = useRef<number>(0)
+  const lastWindow = useRef({height: 1, width: 1})
   const prevButton = useRef<any>(null)
   const nextButton = useRef<any>(null)
   const zoomIn = useRef<any>(null)
   const zoomOut = useRef<any>(null)
-  const [selected, setSelected] = useState<image>({} as image)
-  const [showViewer, setShowViewer] = useState<boolean>(false)
-  const selectedInd = useRef<number[]>([0, 0]) // 0: image index, 1: table index
-  const [hideButtons, setHideButtons] = useState<boolean[]>([false, false])
   const parentDiv = useRef<any>()
+  const windowSize = useRef<any>()
+  
   
 
   const lazyLoadImgs = (clear=false) => {
@@ -92,114 +94,119 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
       p.then(r => {
         const pgs: table[] = Object.values(r.data);
         pages.current = JSON.parse(JSON.stringify(pgs))
-        fetchImgs(true)
+        reloadImgs()
         setCurrPage(0)
       })
   }
 
-  const fetchImgs = (cond=false, page=loadPage.current, callbackfn=lazyLoadImgs, force=false): any => {
-    fetching.current = true
-    const tblName = pages.current[page].name
-    if (force || !images.current[tblName]) {
-      const p = axios.get('http://192.168.1.252/serve.php?name=' + pages.current[page].name)
-      p.then(r => {
-        const imgs: image[] = Object.values(r.data);
-        const tblName = pages.current[page].name
-        const imgsCpy: image[] = []
-        for (const img of imgs) {
-          imgsCpy.push({...img, table: tblName})
-        }
-        images.current[tblName] = imgsCpy
-        fetching.current = false
-        return callbackfn(cond)
-      })
-    }
-    else {
-      fetching.current = false
-      return callbackfn(cond)
-    }
-  }
-
-  const getPrev = (preload=false) => {
-    // if image is in current page
-    if (selectedInd.current[0] > 0 && selected.table) {
-      const table = images.current[selected.table]
-      if (preload) {
-        if (table[selectedInd.current[0]-1])
-          new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]-1].thumb
+  const fetchImgs = (cond=false, page=loadPage.current, callbackfn=lazyLoadImgs, force=false): Promise<any> => {
+    if (!fetching.current) {
+      fetching.current = true
+      const tblName = pages.current[page].name
+      if (force || !images.current[tblName]) {
+        
+        const p = axios.get('http://192.168.1.252/serve.php?name=' + pages.current[page].name)
+        return p.then(r => {
+          const imgs: image[] = Object.values(r.data);
+          const tblName = pages.current[page].name
+          const imgsCpy: image[] = []
+          for (const img of imgs) {
+            imgsCpy.push({...img, table: tblName})
+          }
+          images.current[tblName] = imgsCpy
+          fetching.current = false
+          return callbackfn(cond)
+        })
       }
       else {
-        selectedInd.current[0] -= 1
-        setSelected(table[selectedInd.current[0]])
+        return Promise.resolve().then(() => {
+          fetching.current = false
+          return callbackfn(cond)
+        })
       }
     }
-    else if (selectedInd.current[1] > 0) {
-      // if prev page is already fetched
-      const prevPage = pages.current[selectedInd.current[1] - 1]
-      if (images.current[prevPage.name]) {
+    return Promise.resolve()
+  }
+
+  const reloadImgs = () => {
+    fetchImgs(true)
+  }
+
+  const getImage = (inds: number[]|undefined): image|undefined => {
+    if (!inds) return undefined
+    const selectedPage = pages.current[inds[1]].name
+    const table = images.current[selectedPage]
+    return table[inds[0]]
+  }
+
+  const getPrev = (preload=false, indicies=selectedInd): Promise<number[]|undefined> => {
+    const selectedPage = pages.current[indicies[1]].name
+
+    // if image is in current page
+    if (indicies[0] > 0) {
+      const table = images.current[selectedPage]
+      if (preload) {
+        if (table[indicies[0]-1])
+          new Image().src = 'http://192.168.1.252' + table[indicies[0]-1].thumb
+      }
+      else {
+        return Promise.resolve([indicies[0]-1, indicies[1]])
+      }
+    }
+    else if (indicies[1] > 0) {
+      const prevPage = pages.current[indicies[1] - 1]
+      
+      if (images.current[prevPage.name]) { // if prev page is already fetched
         const ind = images.current[prevPage.name].length - 1
-        if (preload) {
+        if (preload)
           new Image().src = 'http://192.168.1.252' + images.current[prevPage.name][ind].thumb
-        }
-        else {
-          selectedInd.current = [ind, selectedInd.current[1] - 1]
-          setSelected(images.current[prevPage.name][ind])
-        }
-      }
-      // else fetch page and try again
-      else {
-        fetchImgs(preload, selectedInd.current[1] - 1, getNext)
-      }
-    }
-  }
-
-  const getNext = (preload=false, fullImg=false, increment=true) => {
-    const table = selected.table ? images.current[selected.table] : undefined
-    // if image is in current page
-    if (table && selectedInd.current[0] < table.length - 1) {
-      if (preload) {
-        if (fullImg)
-          new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]+1].path
         else
-          new Image().src = 'http://192.168.1.252' + table[selectedInd.current[0]+1].thumb
+          return Promise.resolve([ind, indicies[1] - 1])
       }
-      else {
-        const nextInd = selectedInd.current[0] + 1
-        if (increment) selectedInd.current[0] = nextInd
-        setSelected(table[nextInd])
+      else { // else fetch page and return undefined for now
+        return fetchImgs(preload, indicies[1] - 1, () => getPrev(preload, indicies))
       }
     }
-    else if (selectedInd.current[1] < pages.current.length - 1) {
-      // if next page already fetched
-      const nextPage = pages.current[selectedInd.current[1] + 1]
-      if (images.current[nextPage.name]) {
-        if (preload) {
-          if (fullImg)
-            new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].path
-          else
-            new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].thumb
-        }
-        else {
-          selectedInd.current = [0, selectedInd.current[1] + 1]
-          setSelected(images.current[nextPage.name][0])
-        }
-      }
-      // else fetch page and try again
-      else {
-        fetchImgs(preload, selectedInd.current[1] + 1, getNext)
-      }
-    }
+    // if no more
+    return Promise.resolve(undefined)
   }
 
-  // remove the currently selected image
-  const removeImg = () => {
-    if (selected && selected.table) {
-      getNext(false, false, false)
+  const getNext = (preload=false, indicies=selectedInd): Promise<number[]|undefined> => {
+    const selectedPage = pages.current[indicies[1]].name
+    const table = images.current[selectedPage]
+
+    // if image is in current page
+    if (table && indicies[0] < table.length - 1) {
+      if (preload)
+        new Image().src = 'http://192.168.1.252' + table[indicies[0]+1].thumb
+      else
+        return Promise.resolve([indicies[0] + 1, indicies[1]])
+    }
+    else if (indicies[1] < pages.current.length - 1) {
+      const nextPage = pages.current[indicies[1] + 1]
+
+      if (images.current[nextPage.name]) { // if next page already fetched
+        if (preload)
+          new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].thumb
+        else
+          return Promise.resolve([0, indicies[1] + 1])
+      }
+      else { // else fetch page and return undefined for now
+        return fetchImgs(preload, indicies[1] + 1, () => getNext(preload, indicies))
+      }
+    }
+    // reached the end
+    return Promise.resolve(undefined)
+  }
+
+  // delete the currently selected image
+  const deleteImg = (img: image) => {
+    if (img.table) {
       axios.post('http://192.168.1.252/remove.php', {
-        table: selected.table,
-        name: selected.name
+        table: img.table,
+        name: img.name
       }).then(
-        r => fetchImgs(false, selectedInd.current[1], ()=>{}, true)
+        r => fetchImgs(false, selectedInd[1], ()=>undefined, true)
       )
     }
   }
@@ -217,10 +224,6 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   useEffect(() => {
     lazyLoadImgs()
   }, [columns])
-
-  useEffect(() => {
-    showHideButtons()
-  }, [selected])
 
   useEffect(() => {
     if (nextButton.current) {
@@ -254,16 +257,18 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     else if (window.innerWidth < 1120) numCols.current = 2
     else if (window.innerWidth < 1600) numCols.current = 3
     else numCols.current = 4
-    lastWindow.current = window.innerWidth
+    lastWindow.current = {height: windowSize.current.clientHeight, width: windowSize.current.clientWidth}
     setColFlex(1/numCols.current * 100)
     fetchPages()
+
+    setAspectRatio(window.innerWidth / window.innerHeight)
   }, [])
 
   const updateCurrPage = (ind: number) => {
     if (ind >= 0 && ind < pages.current.length) {
       loadPage.current = ind
       setCurrPage(ind)
-      fetchImgs(true)
+      reloadImgs()
     }
   }
 
@@ -302,38 +307,24 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
   const onSelect = (ref: any, img: image) => {
     // get index of curr image
     if (img.table) {
+      const newInd = [0, 0]
+
       const table = images.current[img.table]
       for (let i = 0; i < table.length; i++) {
         if (table[i].id === img.id) {
-          selectedInd.current[0] = i
+          newInd[0] = i
           break
         }
       }
       for (let i = 0; i < pages.current.length; i++) {
         if (pages.current[i].name === img.table) {
-          selectedInd.current[1] = i
+          newInd[1] = i
           break
         }
       }
-    }
 
-    setSelected(img)
-    setShowViewer(true)
-  }
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (selected.id) {
-      if (event.key === 'ArrowLeft') {
-        getPrev(false)
-        getPrev(true)
-      }
-      else if (event.key === 'ArrowRight') {
-        getNext(false)
-        getNext(true)
-      }
-      else if (event.key === 'Escape') {
-        closeViewer()
-      }
+      setSelectedInd(newInd)
+      setShowViewer(true)
     }
   }
 
@@ -341,49 +332,29 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
     if (cols > 0 && cols < 8 && numCols.current !== cols) {
       numCols.current = cols
       loadPage.current = currPage
-      lastWindow.current = window.innerWidth
+      lastWindow.current = {height: windowSize.current.clientHeight, width: windowSize.current.clientWidth}
       setColFlex(1/cols * 100)
-      fetchImgs(true)
+      reloadImgs()
     }
   }
 
   const onResize = () => {
-    if (Math.abs(lastWindow.current - window.innerWidth) > 50) {
-      if (window.innerWidth < 700) setNumCols(1)
-      else if (window.innerWidth < 1120) setNumCols(2)
-      else if (window.innerWidth < 1600) setNumCols(3)
+    if (Math.abs(lastWindow.current.width - windowSize.current.clientWidth) 
+          + Math.abs(lastWindow.current.height - windowSize.current.clientHeight) > 5) {
+
+      if (windowSize.current.clientWidth < 700) setNumCols(1)
+      else if (windowSize.current.clientWidth < 1120) setNumCols(2)
+      else if (windowSize.current.clientWidth < 1600) setNumCols(3)
       else setNumCols(4)
+      
+      setAspectRatio(windowSize.current.clientWidth / windowSize.current.clientHeight)
+      lastWindow.current = {height: windowSize.current.clientHeight, width: windowSize.current.clientWidth}
     }
   }
-
-  const showHideButtons = () => {
-    const hide = [false, false]
-    if (selectedInd.current[1] === 0 && selectedInd.current[0] === 0)
-      hide[0] = true
-
-    if (selectedInd.current[1] === pages.current.length - 1) {
-      const table = selected.table ? images.current[selected.table] : undefined
-      if (table && selectedInd.current[0] === table.length - 1)
-        hide[1] = true
-    }
-    setHideButtons(hide)
-  }
-
-  const closeViewer = () => {
-    // updateCurrPage(selectedInd.current[1])
-    setShowViewer(false)
-    document.documentElement.style.overflow = 'auto'
-  }
-
 
   const arrow = <svg viewBox='0 0 50 50' className='btn'>
                   <path d="M 15 10 L 35 25"/>
                   <path d="M 15 40 L 35 25"/>
-                </svg>
-
-  const upload = <svg viewBox='0 0 50 50' className='btn'>
-                  <path d="M 10 25 L 40 25"/>
-                  <path d="M 25 10 L 25 40"/>
                 </svg>
   
   const magnifyUp = <svg viewBox='0 0 50 50' className='btn nonmobile'>
@@ -399,7 +370,8 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
                       </svg>
 
   return (
-    <div className='falsescroll' ref={parentDiv} onKeyDown={onKeyDown} tabIndex={-1}>
+    <div className='falsescroll' ref={parentDiv} tabIndex={-1}>
+      <div className="windowsize" ref={windowSize} tabIndex={-1}></div>
       <div className="title">
         <div className='title-left'>
           <div className='item-left'></div>
@@ -411,11 +383,12 @@ export default function Browse({ togglePages }: { togglePages: () => void }) {
           <div className='title-right-grid'>
             <div className='item-right' ref={zoomIn} onClick={() => setNumCols(numCols.current-1)}>{magnifyUp}</div>
             <div className='item-right' ref={zoomOut} onClick={() => setNumCols(numCols.current+1)}>{magnifyDown}</div>
-            <div className='item-right' onClick={togglePages}>{upload}</div>
+            {/* <div className='item-right' ref={zoomOut} >{arrow}</div> */}
+            <Upload reloadImgs={reloadImgs} />
           </div>
         </div>
       </div>
-      {showViewer ? <MediaViewer selected={selected} closeViewer={closeViewer} getPrev={getPrev} getNext={getNext} removeImg={removeImg} hideButtons={hideButtons} /> : <></>}
+      {showViewer ? <MediaViewer selectedInd={selectedInd} aspectRatio={aspectRatio} setSelectedInd={setSelectedInd} showViewer={setShowViewer} getImage={getImage} deleteImg={deleteImg} getPrev={getPrev} getNext={getNext} /> : <></>}
       <div className="grid">
         {columns.map(((col, i) =>
           <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`}}>

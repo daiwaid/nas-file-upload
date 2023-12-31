@@ -5,7 +5,7 @@
 
 .delete-dropdown {
   position: fixed;
-  width: 50px;
+  width: 40px;
   background-color: rgb(var(--title-rgb));
   border-radius: 10px;
   display: grid;

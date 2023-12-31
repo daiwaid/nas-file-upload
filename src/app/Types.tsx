@@ -16,3 +16,9 @@ export type table = {
   year: number,
   month: number
 }
+
+export type imageList = {
+  prev: image|undefined,
+  curr: image|undefined,
+  next: image|undefined
+}

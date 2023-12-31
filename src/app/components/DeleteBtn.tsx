@@ -1,7 +1,7 @@
 import { useRef } from 'react'
-import './deleteBtn.css'
+import './DeleteBtn.css'
 
-export default function DeleteBtn({removeImg}: {removeImg: () => void}) {
+export default function DeleteBtn({ removeImg }: { removeImg: () => void }) {
   const dropdown = useRef<any>()
 
   const openMenu = () => {
@@ -18,11 +18,11 @@ export default function DeleteBtn({removeImg}: {removeImg: () => void}) {
   }
 
   const trash = <svg viewBox='0 0 50 50' className='btn'>
-                  <path d="M 39 12 L 36 43 L 14 43 L 11 12" />
-                  <path d="M 10 12 L 40 12"/>
-                  <path d="M 20 21 L 21 35"/>
-                  <path d="M 30 21 L 29 35"/>
-                  <path d="M 16 7 L 34 7"/>
+                  <path d="M 38 14 L 35 41 L 14 41 L 12 14" />
+                  <path d="M 10.5 14 L 39.5 14"/>
+                  <path d="M 21 22 L 21.5 32"/>
+                  <path d="M 29 22 L 28.5 32"/>
+                  <path d="M 17 8 L 33 8"/>
                 </svg>
   
   const ex = <svg viewBox='0 0 50 50' className='btn'>
@@ -31,8 +31,8 @@ export default function DeleteBtn({removeImg}: {removeImg: () => void}) {
             </svg>
   
   const check = <svg viewBox='0 0 50 50' className='btn'>
-        <path d="M 20 37 L 40 14"/>
-        <path d="M 10 25 L 20 37"/>
+        <path d="M 20 35 L 40 12"/>
+        <path d="M 10 25 L 20 35"/>
       </svg>
 
   return (

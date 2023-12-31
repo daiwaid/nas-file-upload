@@ -1,26 +1,18 @@
 :root {
-  --foreground-rgb: 30, 30, 30;
-  --highlight-rgb: 255, 255, 255;
-  --background-rgb-1: 238, 119, 82;
-  --background-rgb-2: 231, 60, 126;
-  --background-rgb-3: 35, 166, 213;
-  --background-rgb-4: 35, 213, 171;
+  --foreground-rgb: 60, 60, 60;
+  --highlight-rgb: 0, 0, 0;
   --background-rgb: 200, 200, 200;
   --select-rgb: 220, 220, 220;
-  --title-rgb: 35, 166, 213;
+  --title-rgb: 240, 240, 240;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 200, 200, 200;
     --highlight-rgb: 255, 255, 255;
-    --background-rgb-1: 50, 0, 12;
-    --background-rgb-2: 25, 0, 20;
-    --background-rgb-3: 20, 0, 75;
-    --background-rgb-4: 0, 41, 11;
     --background-rgb: 0, 0, 0;
     --select-rgb: 70, 70, 70;
-    --title-rgb: 5, 0, 30;
+    --title-rgb: 24, 24, 24;
   }
 }
 
@@ -28,46 +20,6 @@ body {
   background-color: rgb(var(--background-rgb));
   color: rgb(var(--foreground-rgb));
   margin: 0;
-}
-
-.title {
-  position: sticky;
-  top: 0;
-  height: 50px;
-  width: 100%;
-  background-color: rgb(var(--title-rgb));
-  display: grid;
-  grid-template-columns: 1fr clamp(150px, 20vw, 300px) 1fr;
-  align-items: center;
-  z-index: 2;
-}
-
-.title-left {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.title-right {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.title-right-grid {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: right;
-}
-
-.item-left {
-  margin: 0px 5px;
-  justify-self: left;
-  display: grid;
-}
-.item-center {
-  justify-self: center;
-}
-.item-right {
-  margin: 0px 5px;
-  justify-self: right;
-  display: grid;
 }
 
 .btn {
@@ -84,6 +36,29 @@ body {
 .inactive .btn {
   opacity: 0.2;
   cursor: default;
+}
+
+.menu-backgnd {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 250ms;
+}
+
+.menu-backgnd.visible {
+  height: 100vh;
+  opacity: 1;
+}
+
+.prevent-select {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
 }
 
 /* Enable hover only on non-touch devices */

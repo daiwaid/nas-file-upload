@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import './pageMenu.css'
-import axios from 'axios'
+import './PageMenu.css'
 import { table } from '../Types'
 
 export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }: { pages: table[], currPage: number, 
@@ -31,14 +30,15 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   }
 
   const scrollYr = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (lastClick.current < (Date.now() - 50)) {
+    if (lastClick.current < (Date.now() - 100) || Math.abs(event.deltaY) >= 100) {
       lastClick.current = Date.now()
       if (event.deltaY < 0) updateYear(selectedYr - 1)
       else if (event.deltaY > 0) updateYear(selectedYr + 1)
     }
   }
   const scrollMn = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (lastClick.current < (Date.now() - 50)) {
+    console.log(event.deltaY)
+    if (lastClick.current < (Date.now() - 100) || Math.abs(event.deltaY) >= 100) {
       lastClick.current = Date.now()
       if (event.deltaY < 0) updateMonth(selectedMn - 1)
       else if (event.deltaY > 0) updateMonth(selectedMn + 1)

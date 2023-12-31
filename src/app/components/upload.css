@@ -1,75 +1,58 @@
 .upl {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      -45deg,
-      rgb(var(--background-rgb-1)),
-      rgb(var(--background-rgb-2)),
-      rgb(var(--background-rgb-3)),
-      rgb(var(--background-rgb-4)));
-  background-size: 1000%, 1000%;
-  height: 100vh;
-  animation: Gradient 30s ease infinite;
-  margin: 0;
-}
-
-.upload {
-  height: 50vh;
-  width: 50vw;
-  position: absolute;
-  font-size: 3em;
-  text-align: center;
-  padding: 20px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  position: relative;
+  height: 40px;
+  width: 40px;
 }
 
 .box__file {
   position: absolute;
-  height: 100%;
-  width: 100%;
+  height: 40px;
+  width: 40px;
+  font-size: 0;
   opacity: 0;
-  z-index: 2;
   cursor: pointer;
 }
 
-.left-arr {
+.box__file::file-selector-button {
+  font-size: 0;
+}
+
+.btn.abs {
   position: absolute;
+  height: 40px;
+  width: 40px;
 }
 
 .plus, .circle, .check {
   position: relative;
-  margin-bottom: 30px;
-  height: min(40vh, 40vw);
-  width: min(40vh, 40vw);
-  stroke-width: 0.8em;
   stroke: rgb(var(--foreground-rgb));
   stroke-linecap: round;
   fill: none;
 }
 
-.plus {
-  animation: Adding 4s linear infinite;
+.big-icon {
+  margin-bottom: 30px;
+  height: min(40vh, 40vw);
+  width: min(40vh, 40vw);
+  stroke-width: 4px;
 }
+
 .circle {
-  stroke-width: 0.5em;
   animation: Loading 2s linear infinite;
-  /* rotate: 5deg; */
 }
+
+.circle.big-icon {
+  stroke-width: 3px;
+}
+
 #path1 {
-  stroke-dasharray: 400, 600;
-  animation: Done 2s;
-  opacity: 0;
+  stroke-dasharray: 40, 100;
+  animation: CheckL 3s;
 }
 
 #path2 {
-  stroke-dasharray: 700, 300;
-  animation: Done 1900ms;
-  opacity: 0;
+  stroke-dasharray: 40, 100;
+  animation: CheckR 3s;
 }
 
 @keyframes Gradient {
@@ -101,43 +84,71 @@
 
 @keyframes Loading {
   0% {
-    stroke-dasharray: 10 620;
-    stroke-dashoffset: 1410;
+    stroke-dasharray: 1 62;
+    stroke-dashoffset: 141;
   }
   45% {
-    stroke-dasharray: 580 50;
-    stroke-dashoffset: 1150;
+    stroke-dasharray: 58 5;
+    stroke-dashoffset: 115;
   }
   50% {
-    stroke-dasharray: 580 50;
-    stroke-dashoffset: 1100;
+    stroke-dasharray: 58 5;
+    stroke-dashoffset: 110;
   }
   95% {
-    stroke-dasharray: 10 620;
-    stroke-dashoffset: 200;
+    stroke-dasharray: 1 62;
+    stroke-dashoffset: 20;
   }
   100% {
-    stroke-dasharray: 10 620;
-    stroke-dashoffset: 150;
+    stroke-dasharray: 1 62;
+    stroke-dashoffset: 15;
   }
 }
 
-@keyframes Done {
+@keyframes CheckL {
   0% {
     opacity: 1;
-    stroke-dashoffset: 700;
+    stroke-dashoffset: 50;
   }
-  20% {
-    stroke-dashoffset: 100;
-  }
-  80% {
+  30% {
     stroke-dashoffset: 0;
   }
-  99% {
+  60% {
+    stroke-dashoffset: 0;
+  }
+  89% {
     opacity: 1;
+  }
+  90% {
+    opacity: 0;
+    stroke-dashoffset: -50;
   }
   100% {
     opacity: 0;
-    stroke-dashoffset: -300;
+    stroke-dashoffset: 50;
+  }
+}
+
+@keyframes CheckR {
+  0% {
+    opacity: 1;
+    stroke-dashoffset: 90;
+  }
+  30% {
+    stroke-dashoffset: 0;
+  }
+  65% {
+    stroke-dashoffset: 0;
+  }
+  94% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+    stroke-dashoffset: -50;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 50;
   }
 }
