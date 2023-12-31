@@ -4,11 +4,10 @@ import { image } from "../Types";
 
 
 const ImgContainer = memo(({ img, aspectRatio, margin }: 
-                          { img: image|undefined, aspectRatio: number, selected: boolean, margin: number }) =>  {
+                          { img: image|undefined, aspectRatio: number, margin: number }) =>  {
 
   const imgContainer = useRef<any>()
   const preload = new Image()
-  let styles: any = {minWidth: '100%', height: 'auto'}
 
   const load = () => {
     if (imgContainer.current) imgContainer.current.classList.add('loaded')
@@ -20,15 +19,6 @@ const ImgContainer = memo(({ img, aspectRatio, margin }:
       preload.onload = load
     }
   }, [img])
-
-  useEffect(() => {
-    if (img) {
-      styles = aspectRatio > img.width / img.height
-        ? {minHeight: '100%', width: 'auto'}
-        : {minWidth: '100%', height: 'auto'}
-    }
-  }, [aspectRatio])
-  
 
   return (
     <>
@@ -42,4 +32,5 @@ const ImgContainer = memo(({ img, aspectRatio, margin }:
   )
 })
 
+ImgContainer.displayName = 'ImgContainer'
 export default ImgContainer

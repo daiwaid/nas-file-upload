@@ -9,7 +9,7 @@ import ImgContainer from './ImgContainer'
 export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, showViewer, getImage, deleteImg, getPrev, getNext }: 
                         { selectedInd: number[], aspectRatio: number, setSelectedInd: React.Dispatch<React.SetStateAction<number[]>>, 
                           showViewer: (viewer: boolean) => void, getImage: (inds: number[] | undefined) => image | undefined, 
-                          deleteImg: (img: image) => void, getPrev: (preload?: boolean, indicies?: number[]) => Promise<number[]|undefined>,
+                          deleteImg: (img: image) => Promise<boolean>, getPrev: (preload?: boolean, indicies?: number[]) => Promise<number[]|undefined>,
                           getNext: (preload?: boolean, indicies?: number[], fullImg?: boolean) => Promise<number[]|undefined> }) {
 
   const [fullscreen, setFullscreen] = useState(false)
@@ -52,20 +52,21 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
   // remove the currently selected image
   const removeImg = () => {
-    const toDelete = selected.curr
-    toLoad.current += 1
-
-    loadNext(true).then( res => {
-      if (!res) {
-        toLoad.current -= 1
-        return loadPrev(true)
-      }
-      return true
-    }).then( res => {
-      if (res && toDelete) {
-        deleteImg(toDelete)
-       } // only delete if more than 1 img remain
-    })
+   // won't delete if only 1 image left
+    if ((selected.prev || selected.next) && selected.curr) {
+      deleteImg(selected.curr).then( res => {
+        if (res) {
+          toLoad.current += 1
+          return loadNext(true)
+        }
+        return false
+      }).then( res => {
+        if (!res) {
+          toLoad.current -= 1
+          loadPrev(true)
+        }
+      })
+    }
   }
 
   const loadPrev = (del=false): Promise<boolean> => {
@@ -142,7 +143,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
           return getNext(false, newInd).then( nextInd => {
             if (del)
-              setSelected({prev: selected.prev , curr: selected.curr, next: getImage(nextInd)})
+              setSelected({prev: selected.prev , curr: selected.next, next: getImage(nextInd)})
             else
               setSelected({prev: imgs[imgs.length-2], curr: imgs[imgs.length-1], next: getImage(nextInd)})
 
@@ -208,9 +209,9 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
         quickswipe = true
         newDirection = -Math.sign(movedX.current)
       }
-      // else if (Math.abs(currX.current) > frameWidth / 3) { // if swiped enough to change current img
-      //   newDirection = -Math.sign(currX.current)
-      // }
+      else if (Math.abs(currX.current) > frameWidth / 3) { // if swiped enough to change current img
+        newDirection = -Math.sign(currX.current)
+      }
 
       // if already at one of the ends or didn't move enough
       if (newDirection === 0 || !selected.prev && newDirection < 0 || !selected.next && newDirection > 0) {
@@ -294,13 +295,6 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
     direction.current = 0
   }
 
-  /** Smoothly transitions from x0 to x1, returns what x0 should become in the next time step. */
-  const smoothTransition = (x0: number, x1: number, timestep: number): number => {
-    const cutoff = 1
-    if (Math.abs(x1 - x0) < cutoff) return x1
-    return x0 + Math.sign(x1-x0) * ((Math.abs(x1-x0)+200)**2 / 2**16 - 0.55) * Math.min(timestep, 20)
-  }
-
   const prevImg = () => {
     if (!selected.prev) return
 
@@ -316,6 +310,13 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
     toLoad.current += 1
     currX.current += frameWidth
     loadNext(false)
+  }
+
+  /** Smoothly transitions from x0 to x1, returns what x0 should become in the next time step. */
+  const smoothTransition = (x0: number, x1: number, timestep: number): number => {
+    const cutoff = 1
+    if (Math.abs(x1 - x0) < cutoff) return x1
+    return x0 + Math.sign(x1-x0) * ((Math.abs(x1-x0)+200)**2 / 2**16 - 0.55) * Math.min(timestep, 20)
   }
 
   const touchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -512,11 +513,11 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
         <div className="slider-track" ref={sliderTrackRef}>
           {selected && sliderRef.current ? <>
             <ImgContainer key={selected.prev ? selected.prev.path : -1} img={selected.prev} 
-                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} selected={false} margin={margin} />
+                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} />
             <ImgContainer key={selected.curr ? selected.curr.path : -2} img={selected.curr} 
-                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} selected={true} margin={margin} />
+                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} />
             <ImgContainer key={selected.next ? selected.next.path : -3} img={selected.next} 
-                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} selected={false} margin={margin} />
+                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} />
           </> : <div></div>
           }
         </div>

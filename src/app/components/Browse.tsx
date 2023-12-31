@@ -200,15 +200,16 @@ export default function Browse() {
   }
 
   // delete the currently selected image
-  const deleteImg = (img: image) => {
+  const deleteImg = (img: image): Promise<boolean> => {
     if (img.table) {
-      axios.post('http://192.168.1.252/remove.php', {
+      return axios.post('http://192.168.1.252/remove.php', {
         table: img.table,
         name: img.name
       }).then(
-        r => fetchImgs(false, selectedInd[1], ()=>undefined, true)
-      )
+        r => fetchImgs(false, selectedInd[1], ()=>Promise.resolve(true), true)
+      ).catch( r => Promise.resolve(false) )
     }
+    return Promise.resolve(false)
   }
 
   // add scroll event listener
@@ -383,7 +384,6 @@ export default function Browse() {
           <div className='title-right-grid'>
             <div className='item-right' ref={zoomIn} onClick={() => setNumCols(numCols.current-1)}>{magnifyUp}</div>
             <div className='item-right' ref={zoomOut} onClick={() => setNumCols(numCols.current+1)}>{magnifyDown}</div>
-            {/* <div className='item-right' ref={zoomOut} >{arrow}</div> */}
             <Upload reloadImgs={reloadImgs} />
           </div>
         </div>
@@ -391,14 +391,14 @@ export default function Browse() {
       {showViewer 
         ? <MediaViewer selectedInd={selectedInd} aspectRatio={aspectRatio} setSelectedInd={setSelectedInd} showViewer={setShowViewer} 
               getImage={getImage} deleteImg={deleteImg} getPrev={getPrev} getNext={getNext} /> 
-        : <div className="grid">
-            {columns.map((col, i) =>
-              <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`}}>
-                {col.map((img) => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={(e) => onSelect(e.currentTarget, img)} />)}
-              </div>
-            )}
+        : <></> }
+      <div className="grid">
+        {columns.map((col, i) =>
+          <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`}}>
+            {col.map((img) => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={(e) => onSelect(e.currentTarget, img)} />)}
           </div>
-        }
+        )}
+      </div>
     </div>
   )
 }
