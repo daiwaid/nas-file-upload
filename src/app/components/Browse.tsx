@@ -388,14 +388,17 @@ export default function Browse() {
           </div>
         </div>
       </div>
-      {showViewer ? <MediaViewer selectedInd={selectedInd} aspectRatio={aspectRatio} setSelectedInd={setSelectedInd} showViewer={setShowViewer} getImage={getImage} deleteImg={deleteImg} getPrev={getPrev} getNext={getNext} /> : <></>}
-      <div className="grid">
-        {columns.map(((col, i) =>
-          <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`}}>
-            {col.map((img) => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={(e) => onSelect(e.currentTarget, img)} />)}
+      {showViewer 
+        ? <MediaViewer selectedInd={selectedInd} aspectRatio={aspectRatio} setSelectedInd={setSelectedInd} showViewer={setShowViewer} 
+              getImage={getImage} deleteImg={deleteImg} getPrev={getPrev} getNext={getNext} /> 
+        : <div className="grid">
+            {columns.map((col, i) =>
+              <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`}}>
+                {col.map((img) => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={(e) => onSelect(e.currentTarget, img)} />)}
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        }
     </div>
   )
 }

@@ -21,8 +21,6 @@
   display: none;
 }
 
-@media (min-width: 1121px) {
-  .img-container.loaded > img {
-    display: inline;
-  }
+.img-container.loaded > img {
+  display: inline;
 }

@@ -97,9 +97,10 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
               setSelected({prev: getImage(prevInd), curr: selected.prev, next: selected.next})
             else
               setSelected({prev: getImage(prevInd), curr: imgs[imgs.length-1], next: imgs[imgs.length-2]})
+            
+              if (newInd) setSelectedInd(newInd)
 
-            if (newInd) setSelectedInd(newInd)
-
+            getPrev(true, prevInd) // preload
             // if more imgs to load
             if (toLoad.current < 0) return loadPrev()
             else if (toLoad.current > 0) return loadNext()
@@ -147,6 +148,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
             if (newInd) setSelectedInd(newInd)
 
+            getNext(true, nextInd) // preload
             // if more imgs to load
             if (toLoad.current < 0) return loadPrev()
             else if (toLoad.current > 0) return loadNext()
@@ -174,6 +176,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
     if (swiping.current === true && sliderTrackRef.current) {
       const frameWidth = sliderRef.current.clientWidth + margin*2
       const toMove = clientX - prevX.current
+      if (toMove === 0) return
       movedX.current += toMove
 
       if (!selected.prev && currX.current > 0) // at the left end
@@ -201,13 +204,13 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
       
       if (Date.now() - startTime.current > 60 && Date.now() - startTime.current < 300 
-                                      && Math.abs(movedX.current) > 10) { // quick swipe
+                                      && Math.abs(movedX.current) > 20) { // quick swipe
         quickswipe = true
         newDirection = -Math.sign(movedX.current)
       }
-      else if (Math.abs(currX.current) > frameWidth / 3) { // if swiped enough to change current img
-        newDirection = -Math.sign(currX.current)
-      }
+      // else if (Math.abs(currX.current) > frameWidth / 3) { // if swiped enough to change current img
+      //   newDirection = -Math.sign(currX.current)
+      // }
 
       // if already at one of the ends or didn't move enough
       if (newDirection === 0 || !selected.prev && newDirection < 0 || !selected.next && newDirection > 0) {
@@ -242,6 +245,12 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
         }
       }
 
+      if (Math.abs(currX.current) > frameWidth) { // if swiped more than 1 entire image
+        direction.current += -Math.sign(currX.current)
+        currX.current += Math.sign(direction.current) * frameWidth
+        changeCurrImg()
+      }
+
       requestAnimationFrame(centerImg)
     }
   }
@@ -260,16 +269,12 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
         else timestep = timeStamp - prevTimeStamp
         prevTimeStamp = timeStamp
 
-        currX.current = smoothTransition(currX.current, endX.current, timestep)
+        const a = smoothTransition(currX.current, endX.current, timestep)
+
+        currX.current = a
         sliderTrackRef.current.style.transform = `translateX(${currX.current - frameWidth - margin}px)`
 
-        if (Math.abs(currX.current) > frameWidth) { // if moving more than 1 entire image
-          currX.current = -currX.current % frameWidth
-          endX.current = endX.current % frameWidth
-          changeCurrImg()
-        }
-        else
-          requestAnimationFrame(centerImg)
+        requestAnimationFrame(centerImg)
       }
       else { // finished moving, reset and change img
         quickSwiped.current = false
@@ -293,29 +298,24 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
   const smoothTransition = (x0: number, x1: number, timestep: number): number => {
     const cutoff = 1
     if (Math.abs(x1 - x0) < cutoff) return x1
-    if (Math.abs(x1 - x0) > 60000) return x0 + Math.sign(x1-x0) * 60000
-    return x0 + Math.sign(x1-x0) * ((Math.abs(x1-x0)+200)**2 / 2**16 - 0.55) * timestep
+    return x0 + Math.sign(x1-x0) * ((Math.abs(x1-x0)+200)**2 / 2**16 - 0.55) * Math.min(timestep, 20)
   }
 
   const prevImg = () => {
-    if (!selected.prev || Date.now() - startTime.current < 250) return
+    if (!selected.prev) return
 
-    startTime.current = Date.now()
     const frameWidth = sliderRef.current.clientWidth + margin*2
-    endX.current += frameWidth
-    direction.current -= 1
-
-    if (currX.current === 0) requestAnimationFrame(centerImg)
+    toLoad.current -= 1
+    currX.current -= frameWidth
+    loadPrev(false)
   }
   const nextImg = () => {
-    if (!selected.next || Date.now() - startTime.current < 250) return
+    if (!selected.next) return
 
-    startTime.current = Date.now()
     const frameWidth = sliderRef.current.clientWidth + margin*2
-    endX.current -= frameWidth
-    direction.current += 1
-
-    if (currX.current === 0) requestAnimationFrame(centerImg)
+    toLoad.current += 1
+    currX.current += frameWidth
+    loadNext(false)
   }
 
   const touchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -368,7 +368,10 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
   }
 
   const slide = () => {
-    if (slideshow) loadNext()
+    if (slideshow) {
+      toLoad.current += 1
+      loadNext()
+    }
   }
   
   const toggleFullScreen = () => {
@@ -430,12 +433,11 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
     return () => {
       clearInterval(id)
     }
-  }, [selectedInd])
+  }, [selectedInd, slideshow])
 
   useEffect(() => {
     if (sliderTrackRef.current) {
       const frameWidth = sliderRef.current.clientWidth + margin*2
-
       sliderTrackRef.current.style.transform = `translateX(${currX.current - frameWidth - margin}px)`
     }
 
@@ -499,8 +501,8 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
           <div className={selected.next ? 'item-left' : 'item-left inactive'} ref={rBttn} onClick={nextImg}>{arrow}</div>
           <div className="title-right-grid">
             <div></div>
-            <div className='item-right' onClick={toggleFullScreen}>{fullScrBtn()}</div>
             <div className='item-right' onClick={toggleSlide}>{play}</div>
+            <div className='item-right' onClick={toggleFullScreen}>{fullScrBtn()}</div>
             <DeleteBtn removeImg={removeImg} />
           </div>
         </div>
