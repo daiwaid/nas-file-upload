@@ -18,9 +18,9 @@
   left: 0;
   right: 0;
   pointer-events: none;
-  display: none;
-}
-
-.img-container.loaded > img {
   display: inline;
 }
+
+/* .img-container.loaded > img {
+  display: inline;
+} */

@@ -16,6 +16,10 @@
   }
 }
 
+html {
+  overscroll-behavior-x: none;
+}
+
 body {
   background-color: rgb(var(--background-rgb));
   color: rgb(var(--foreground-rgb));

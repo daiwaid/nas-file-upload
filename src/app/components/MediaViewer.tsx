@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { image, imageList } from '../Types'
 import './MediaViewer.css'
 import DeleteBtn from './DeleteBtn'
@@ -101,7 +101,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
             
               if (newInd) setSelectedInd(newInd)
 
-            getPrev(true, prevInd) // preload
+            // getPrev(true, prevInd) // preload
             // if more imgs to load
             if (toLoad.current < 0) return loadPrev()
             else if (toLoad.current > 0) return loadNext()
@@ -129,7 +129,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
       if (newInd) {
         imgs.push(selected.next)
 
-        const promises = []
+        const promises: Promise<number[] | undefined>[] = []
         for (let i = 1; i < num; i++) {
           promises.push(getNext(false, newInd))
         }
@@ -149,7 +149,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
             if (newInd) setSelectedInd(newInd)
 
-            getNext(true, nextInd) // preload
+            // getNext(true, nextInd) // preload
             // if more imgs to load
             if (toLoad.current < 0) return loadPrev()
             else if (toLoad.current > 0) return loadNext()
@@ -202,7 +202,6 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
     if (swiping.current === true || newDirection !== 0) {
       const frameWidth = sliderRef.current.clientWidth + margin*2
       swiping.current = false
-
       
       if (Date.now() - startTime.current > 60 && Date.now() - startTime.current < 300 
                                       && Math.abs(movedX.current) > 20) { // quick swipe
@@ -331,9 +330,6 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
     swipeEnd()
   }
 
-  const mouseStart = (event: React.MouseEvent<HTMLDivElement>) => {
-    swipeStart(event.clientX)
-  }
   const onMouse = (event: React.MouseEvent<HTMLDivElement>) => {
     if (fullscreen) {
       fullscrTime.current = Date.now()
@@ -344,10 +340,6 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
         document.documentElement.style.cursor = 'auto'
       }
     }
-    swipeAction(event.clientX)
-  }
-  const mouseEnd = (event: React.MouseEvent<HTMLDivElement>) => {
-    swipeEnd()
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -412,6 +404,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
   useEffect(() => {
     viewer.current.focus()
+    document.documentElement.style.overflow = 'hidden'
     document.addEventListener('fullscreenchange', onFullscreen)
 
     direction.current = 0
@@ -473,9 +466,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
                 <path d="M 15 10 L 15 40 M 15 40 L 40 25 M 40 25 L 15 10"/>
               </svg>
 
-  document.documentElement.style.overflow = 'hidden'
-
-  let formatDate = '', formatTime = ''
+let formatDate = '', formatTime = ''
 
   if (selected.curr) {
     const date = new Date(selected.curr.date_created)
@@ -508,7 +499,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
           </div>
         </div>
       </div>
-      <div className="slider prevent-select" ref={sliderRef} onMouseDown={mouseStart} onMouseMove={onMouse} onMouseUp={mouseEnd} onMouseLeave={mouseEnd} 
+      <div className="slider prevent-select" ref={sliderRef} onMouseMove={onMouse}
           onTouchStart={touchStart} onTouchMove={touchAction} onTouchEnd={touchEnd} onTouchCancel={touchEnd} >
         <div className="slider-track" ref={sliderTrackRef}>
           {selected && sliderRef.current ? <>
