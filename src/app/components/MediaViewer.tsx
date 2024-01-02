@@ -5,12 +5,14 @@ import { image, imageList } from '../Types'
 import './MediaViewer.css'
 import DeleteBtn from './DeleteBtn'
 import ImgContainer from './ImgContainer'
+import Icon from './Icon'
 
-export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, showViewer, getImage, deleteImg, getPrev, getNext }: 
+export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, showViewer, getImage, deleteImg, setScroll, getPrev, getNext }: 
                         { selectedInd: number[], aspectRatio: number, setSelectedInd: React.Dispatch<React.SetStateAction<number[]>>, 
                           showViewer: (viewer: boolean) => void, getImage: (inds: number[] | undefined) => image | undefined, 
-                          deleteImg: (img: image) => Promise<boolean>, getPrev: (preload?: boolean, indicies?: number[]) => Promise<number[]|undefined>,
-                          getNext: (preload?: boolean, indicies?: number[], fullImg?: boolean) => Promise<number[]|undefined> }) {
+                          deleteImg: (img: image) => Promise<boolean>, setScroll: (state: boolean) => void
+                          getPrev: (preload?: boolean, indicies?: number[]) => Promise<number[]|undefined>,
+                          getNext: (preload?: boolean, indicies?: number[]) => Promise<number[]|undefined> }) {
 
   const [fullscreen, setFullscreen] = useState(false)
   const [slideshow, setSlideshow] = useState(false)
@@ -41,13 +43,13 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
   let prevTimeStamp = -1
 
   const hideViewer = () => {
-    document.documentElement.style.overflow = 'auto'
     if (fullscreen) {
       document.exitFullscreen()
       if (interval.current) clearInterval(interval.current)
       document.documentElement.style.cursor = 'auto'
     }
     showViewer(false)
+    setScroll(true)
   }
 
   // remove the currently selected image
@@ -69,100 +71,94 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
     }
   }
 
-  const loadPrev = (del=false): Promise<boolean> => {
+  const loadPrev = async (del=false): Promise<boolean> => {
     if (loadingImgs.current || toLoad.current >= 0) // prevent concurrent loads
       return Promise.resolve(false)
 
     loadingImgs.current = true
     const num = -toLoad.current
     toLoad.current = 0
-    let imgs = [selected.curr]
-    return getPrev(false).then( newInd => {
-      if (newInd) {
-        imgs.push(selected.prev)
+    const imgs = [selected.curr]
 
-        const promises = []
-        for (let i = 1; i < num; i++) {
-          promises.push(getPrev(false, newInd))
-        }
-        return Promise.all(promises).then( responses => {
-          for (const newNewInd of responses) {
-            if (!newNewInd) break
+    let newInd = await getPrev(false) // get prev
+    if (newInd) {
+      imgs.push(selected.prev)
 
-            newInd = newNewInd
-            imgs.push(getImage(newInd))
-          }
+      const promises = [] // get all prev needed
+      for (let i = 1; i < num; i++) {
+        promises.push(getPrev(false, newInd))
+      }
+      const responses = await Promise.all(promises)
+      for (const newNewInd of responses) {
+        if (!newNewInd) break
 
-          return getPrev(false, newInd).then( prevInd => {
-            if (del)
-              setSelected({prev: getImage(prevInd), curr: selected.prev, next: selected.next})
-            else
-              setSelected({prev: getImage(prevInd), curr: imgs[imgs.length-1], next: imgs[imgs.length-2]})
-            
-              if (newInd) setSelectedInd(newInd)
-
-            // getPrev(true, prevInd) // preload
-            // if more imgs to load
-            if (toLoad.current < 0) return loadPrev()
-            else if (toLoad.current > 0) return loadNext()
-
-            loadingImgs.current = false
-            return true
-          })
-        })
+        newInd = newNewInd
+        imgs.push(getImage(newInd))
       }
 
+      const prevInd = await getPrev(false, newInd)
+      if (del)
+        setSelected({ prev: getImage(prevInd), curr: selected.prev, next: selected.next })
+      else
+        setSelected({ prev: getImage(prevInd), curr: imgs[imgs.length - 1], next: imgs[imgs.length - 2] })
+
+      if (newInd) setSelectedInd(newInd)
+
+      // getPrev(true, prevInd) // preload
+      // if more imgs to load
+      if (toLoad.current < 0) return loadPrev()
+      else if (toLoad.current > 0) return loadNext()
+
       loadingImgs.current = false
-      return Promise.resolve(false)
-    })
+      return true
+    }
+    loadingImgs.current = false
+    return Promise.resolve(false)
   }
 
-  const loadNext = (del=false): Promise<boolean> => {
+  const loadNext = async (del=false): Promise<boolean> => {
     if (loadingImgs.current || toLoad.current <= 0) // prevent concurrent loads
       return Promise.resolve(false)
 
     loadingImgs.current = true
     const num = toLoad.current
     toLoad.current = 0
-    let imgs = [selected.curr]
-    return getNext(false).then( newInd => {
-      if (newInd) {
-        imgs.push(selected.next)
+    const imgs = [selected.curr]
 
-        const promises: Promise<number[] | undefined>[] = []
-        for (let i = 1; i < num; i++) {
-          promises.push(getNext(false, newInd))
-        }
-        return Promise.all(promises).then( responses => {
-          for (const newNewInd of responses) {
-            if (!newNewInd) break
+    let newInd = await getNext(false)
+    if (newInd) {
+      imgs.push(selected.next)
 
-            newInd = newNewInd
-            imgs.push(getImage(newInd))
-          }
+      const promises = []
+      for (let i = 1; i < num; i++) {
+        promises.push(getNext(false, newInd))
+      }
+      const responses = await Promise.all(promises)
+      for (const newNewInd of responses) {
+        if (!newNewInd) break
 
-          return getNext(false, newInd).then( nextInd => {
-            if (del)
-              setSelected({prev: selected.prev , curr: selected.next, next: getImage(nextInd)})
-            else
-              setSelected({prev: imgs[imgs.length-2], curr: imgs[imgs.length-1], next: getImage(nextInd)})
-
-            if (newInd) setSelectedInd(newInd)
-
-            // getNext(true, nextInd) // preload
-            // if more imgs to load
-            if (toLoad.current < 0) return loadPrev()
-            else if (toLoad.current > 0) return loadNext()
-            
-            loadingImgs.current = false
-            return true
-          })
-        })
+        newInd = newNewInd
+        imgs.push(getImage(newInd))
       }
 
+      const nextInd = await getNext(false, newInd)
+      if (del)
+        setSelected({ prev: selected.prev, curr: selected.next, next: getImage(nextInd) })
+      else
+        setSelected({ prev: imgs[imgs.length - 2], curr: imgs[imgs.length - 1], next: getImage(nextInd) })
+
+      if (newInd) setSelectedInd(newInd)
+
+      // getNext(true, nextInd) // preload
+      // if more imgs to load
+      if (toLoad.current < 0) return loadPrev()
+      else if (toLoad.current > 0) return loadNext()
+
       loadingImgs.current = false
-      return Promise.resolve(false)
-    })
+      return true
+    }
+    loadingImgs.current = false
+    return Promise.resolve(false)
   }
 
   const swipeStart = (clientX: number) => {
@@ -203,12 +199,14 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
       const frameWidth = sliderRef.current.clientWidth + margin*2
       swiping.current = false
       
+      // quick swipe
       if (Date.now() - startTime.current > 60 && Date.now() - startTime.current < 300 
-                                      && Math.abs(movedX.current) > 20) { // quick swipe
+                                      && Math.abs(movedX.current) > 20) {
         quickswipe = true
         newDirection = -Math.sign(movedX.current)
       }
-      else if (Math.abs(currX.current) > frameWidth / 3) { // if swiped enough to change current img
+      // if swiped enough to change current img
+      else if (Math.abs(currX.current) > frameWidth / 3) {
         newDirection = -Math.sign(currX.current)
       }
 
@@ -269,9 +267,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
         else timestep = timeStamp - prevTimeStamp
         prevTimeStamp = timeStamp
 
-        const a = smoothTransition(currX.current, endX.current, timestep)
-
-        currX.current = a
+        currX.current = smoothTransition(currX.current, endX.current, timestep)
         sliderTrackRef.current.style.transform = `translateX(${currX.current - frameWidth - margin}px)`
 
         requestAnimationFrame(centerImg)
@@ -398,18 +394,18 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
   const fullScrBtn = () => {
     if (document.documentElement.requestFullscreen !== undefined) {
-      return fullscreen ? arrIn : arrOut
+      return fullscreen ? <Icon icon='arrIn' className='nonmobile'/> : <Icon icon='arrOut' className='nonmobile'/>
     }
   }
 
   useEffect(() => {
-    viewer.current.focus()
-    document.documentElement.style.overflow = 'hidden'
     document.addEventListener('fullscreenchange', onFullscreen)
-
     direction.current = 0
     currX.current = 0
     endX.current = 0
+
+    viewer.current.focus()
+    setScroll(false)
 
     Promise.all([getPrev(false), getNext(false)]).then( promises => {
       const newSelected = {prev: getImage(promises[0]), curr: getImage(selectedInd), next: getImage(promises[1])}
@@ -441,31 +437,6 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
       
   }, [selected, aspectRatio])
 
-  const ex = <svg viewBox='0 0 50 50' className='btn'>
-              <path d="M 7 25 L 43 25"/>
-              <path d="M 25 7 L 25 43"/>
-            </svg>
-  
-  const arrow = <svg viewBox='0 0 50 50' className='btn nonmobile'>
-                  <path d="M 15 10 L 35 25"/>
-                  <path d="M 15 40 L 35 25"/>
-                </svg>
-
-  const arrOut = <svg viewBox='0 0 50 50' className='btn nonmobile'>
-                    <path d="M 24 11 L 38 12 M 38 12 L 39 26"/>
-                    <path d="M 11 24 L 12 38 M 12 38 L 26 39"/>
-                  </svg>
-  
-  const arrIn = <svg viewBox='0 0 50 50' className='btn nonmobile'>
-                  <path d="M 28 7 L 29 21 M 29 21 L 43 22"/>
-                  <path d="M 7 28 L 21 29 M 21 29 L 22 43"/>
-                </svg>
-  
-  const play = <svg viewBox='0 0 50 50' className={slideshow ? 'btn fill nonmobile' : 'btn nonmobile'}>
-                <path stroke='none' d="M 17 12 L 17 38 L 38 25 L 17 12"/>
-                <path d="M 15 10 L 15 40 M 15 40 L 40 25 M 40 25 L 15 10"/>
-              </svg>
-
 let formatDate = '', formatTime = ''
 
   if (selected.curr) {
@@ -482,18 +453,18 @@ let formatDate = '', formatTime = ''
     <div className='viewer' ref={viewer} onKeyDown={onKeyDown} tabIndex={0}>
       <div className='title prevent-select' ref={titleBar}>
         <div className='title-left'>
-          <div className='item-left' onClick={hideViewer} style={{rotate: '45deg'}}>{ex}</div>
-          <div className={selected.prev ? 'item-right' : 'item-right inactive'} ref={lBttn} onClick={prevImg} style={{rotate: '180deg'}}>{arrow}</div>
+          <div className='item-left' onClick={hideViewer} style={{rotate: '45deg'}}>{<Icon icon='ex'/>}</div>
+          <div className={selected.prev ? 'item-right' : 'item-right inactive'} ref={lBttn} onClick={prevImg} style={{rotate: '180deg'}}>{<Icon icon='arrow' className='nonmobile'/>}</div>
         </div>
         <div className='title-center-mv'>
           <div className='date-text'>{formatDate}</div>
           <div className='time-text'>{formatTime}</div>
           </div>
         <div className="title-right">
-          <div className={selected.next ? 'item-left' : 'item-left inactive'} ref={rBttn} onClick={nextImg}>{arrow}</div>
+          <div className={selected.next ? 'item-left' : 'item-left inactive'} ref={rBttn} onClick={nextImg}>{<Icon icon='arrow' className='nonmobile'/>}</div>
           <div className="title-right-grid">
             <div></div>
-            <div className='item-right' onClick={toggleSlide}>{play}</div>
+            <div className='item-right' onClick={toggleSlide}>{<Icon icon='play' className={slideshow ? 'fill nonmobile' : 'nonmobile'}/>}</div>
             <div className='item-right' onClick={toggleFullScreen}>{fullScrBtn()}</div>
             <DeleteBtn removeImg={removeImg} />
           </div>

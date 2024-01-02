@@ -4,9 +4,10 @@ import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import MediaViewer from './MediaViewer'
 import { image, table } from '../Types'
-import './browse.css'
+import './Browse.css'
 import PageMenu from './PageMenu'
 import Upload from './Upload'
+import Icon from './Icon'
 
 export default function Browse() {
 
@@ -39,7 +40,7 @@ export default function Browse() {
   
   
 
-  const lazyLoadImgs = (clear=false) => {
+  const lazyLoadImgs = async (clear=false): Promise<any> => {
     if (!pages.current[currPage]) return
 
     const tblName = pages.current[loadPage.current].name
@@ -99,30 +100,25 @@ export default function Browse() {
       })
   }
 
-  const fetchImgs = (cond=false, page=loadPage.current, callbackfn=lazyLoadImgs, force=false): Promise<any> => {
+  const fetchImgs = async (cond=false, page=loadPage.current, callbackfn=lazyLoadImgs, force=false): Promise<any> => {
     if (!fetching.current) {
       fetching.current = true
       const tblName = pages.current[page].name
       if (force || !images.current[tblName]) {
-        
-        const p = axios.get('http://192.168.1.252/serve.php?name=' + pages.current[page].name)
-        return p.then(r => {
-          const imgs: image[] = Object.values(r.data);
-          const tblName = pages.current[page].name
-          const imgsCpy: image[] = []
-          for (const img of imgs) {
-            imgsCpy.push({...img, table: tblName})
-          }
-          images.current[tblName] = imgsCpy
-          fetching.current = false
-          return callbackfn(cond)
-        })
+        const p = await axios.get('http://192.168.1.252/serve.php?name=' + pages.current[page].name)
+        const imgs: image[] = Object.values(p.data)
+        const tblName_1 = pages.current[page].name
+        const imgsCpy: image[] = []
+        for (const img of imgs) {
+          imgsCpy.push({ ...img, table: tblName_1 })
+        }
+        images.current[tblName_1] = imgsCpy
+        fetching.current = false
+        return callbackfn(cond)
       }
       else {
-        return Promise.resolve().then(() => {
-          fetching.current = false
-          return callbackfn(cond)
-        })
+        fetching.current = false
+        return callbackfn(cond)
       }
     }
     return Promise.resolve()
@@ -139,7 +135,7 @@ export default function Browse() {
     return table[inds[0]]
   }
 
-  const getPrev = (preload=false, indicies=selectedInd): Promise<number[]|undefined> => {
+  const getPrev = async (preload=false, indicies=selectedInd): Promise<number[]|undefined> => {
     const selectedPage = pages.current[indicies[1]].name
 
     // if image is in current page
@@ -171,7 +167,7 @@ export default function Browse() {
     return Promise.resolve(undefined)
   }
 
-  const getNext = (preload=false, indicies=selectedInd): Promise<number[]|undefined> => {
+  const getNext = async (preload=false, indicies=selectedInd): Promise<number[]|undefined> => {
     const selectedPage = pages.current[indicies[1]].name
     const table = images.current[selectedPage]
 
@@ -353,44 +349,27 @@ export default function Browse() {
     }
   }
 
-  const arrow = <svg viewBox='0 0 50 50' className='btn'>
-                  <path d="M 15 10 L 35 25"/>
-                  <path d="M 15 40 L 35 25"/>
-                </svg>
-  
-  const magnifyUp = <svg viewBox='0 0 50 50' className='btn nonmobile'>
-                      <circle cx='25' cy='25' r='14' />
-                      <path d='M 34.9 34.9 L 40 40' />
-                      <path d="M 19 25 L 31 25"/>
-                      <path d="M 25 19 L 25 31"/>
-                    </svg>
-  const magnifyDown = <svg viewBox='0 0 50 50' className='btn nonmobile'>
-                        <circle cx='25' cy='25' r='14' />
-                        <path d='M 34.9 34.9 L 40 40' />
-                        <path d="M 19 25 L 31 25"/>
-                      </svg>
-
   return (
     <div className='falsescroll' ref={parentDiv} tabIndex={-1}>
       <div className="windowsize" ref={windowSize} tabIndex={-1}></div>
       <div className="title">
         <div className='title-left'>
           <div className='item-left'></div>
-          <div className='item-right' ref={nextButton} onClick={() => updateCurrPage(currPage - 1)} style={{rotate: '180deg'}}>{arrow}</div>
+          <div className='item-right' ref={nextButton} onClick={() => updateCurrPage(currPage - 1)} style={{rotate: '180deg'}}><Icon icon='arrow'/></div>
         </div>
         <PageMenu pages={pages.current} currPage={currPage} updateCurrPage={updateCurrPage} setScroll={setScroll}/>
         <div className='title-right'>
-          <div className='item-left' ref={prevButton} onClick={() => updateCurrPage(currPage + 1)}>{arrow}</div>
+          <div className='item-left' ref={prevButton} onClick={() => updateCurrPage(currPage + 1)}>{<Icon icon='arrow'/>}</div>
           <div className='title-right-grid'>
-            <div className='item-right' ref={zoomIn} onClick={() => setNumCols(numCols.current-1)}>{magnifyUp}</div>
-            <div className='item-right' ref={zoomOut} onClick={() => setNumCols(numCols.current+1)}>{magnifyDown}</div>
+            <div className='item-right' ref={zoomIn} onClick={() => setNumCols(numCols.current-1)}>{<Icon icon='magnifyUp' className='nonmobile'/>}</div>
+            <div className='item-right' ref={zoomOut} onClick={() => setNumCols(numCols.current+1)}>{<Icon icon='magnifyDown' className='nonmobile'/>}</div>
             <Upload reloadImgs={reloadImgs} />
           </div>
         </div>
       </div>
       {showViewer 
         ? <MediaViewer selectedInd={selectedInd} aspectRatio={aspectRatio} setSelectedInd={setSelectedInd} showViewer={setShowViewer} 
-              getImage={getImage} deleteImg={deleteImg} getPrev={getPrev} getNext={getNext} /> 
+              getImage={getImage} deleteImg={deleteImg} setScroll={setScroll} getPrev={getPrev} getNext={getNext} /> 
         : <></> }
       <div className="grid">
         {columns.map((col, i) =>

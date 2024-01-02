@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './PageMenu.css'
 import { table } from '../Types'
+import Icon from './Icon'
 
 export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }: { pages: table[], currPage: number, 
                                     updateCurrPage: (ind: number) => void, setScroll: (state: boolean) => void }) {
@@ -117,11 +118,6 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
     updateMenu()
   }, [currPage])
 
-  const check = <svg viewBox='5 5 30 30' className='btn'>
-        <path d="M 17 30 L 30 14"/>
-        <path d="M 10 23 L 17 30"/>
-      </svg>
-
   if (month.current[selectedYr]) {
     return (
       <div>
@@ -130,7 +126,7 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
         <div className='sel-area' onClick={openMenu}>{pages[currPage] ? pages[currPage].year + '-' + pages[currPage].month : ''}</div>
         <div className="dropdown" ref={menu}>
           <div></div>
-          <div onClick={closeMenu}>{check}</div>
+          <div onClick={closeMenu}>{<Icon icon='check'/>}</div>
           <div></div>
           <div className="dropdown-content" onWheel={scrollYr}>
             <div>

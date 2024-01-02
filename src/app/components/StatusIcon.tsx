@@ -8,13 +8,13 @@ export default function StatusIcon({ status, classNames, onClick }: { status: st
     )
     case 'Uploaded': return (
       <svg viewBox='0 0 50 50' className={`check ${classNames}`} onClick={onClick}>
-        <path id="path1" d="M 10 30 L 20 40"/>
-        <path id="path2" d="M 20 40 L 45 15"/>
+        <path id="path1" d="M 10 25 L 20 35"/>
+        <path id="path2" d="M 20 35 L 40 12"/>
       </svg>
     )
     default: return (
       <svg viewBox='0 0 50 50' className={`circle ${classNames}`} onClick={onClick}>
-        <ellipse cx="25" cy="25" rx="10" ry="10" />
+        <ellipse cx="25" cy="25" rx="15" ry="15" />
       </svg> 
     )
   }

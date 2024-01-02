@@ -34,6 +34,11 @@
   z-index: 1;
 }
 
+.dropdown .btn {
+  height: 50px;
+  width: 50px;
+}
+
 .dropdown-content {
   position: relative;
   width: 100%;

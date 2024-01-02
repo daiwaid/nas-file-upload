@@ -84,24 +84,24 @@
 
 @keyframes Loading {
   0% {
-    stroke-dasharray: 1 62;
-    stroke-dashoffset: 141;
-  }
-  45% {
-    stroke-dasharray: 58 5;
-    stroke-dashoffset: 115;
-  }
-  50% {
-    stroke-dasharray: 58 5;
-    stroke-dashoffset: 110;
-  }
-  95% {
-    stroke-dasharray: 1 62;
+    stroke-dasharray: 5 85;
     stroke-dashoffset: 20;
   }
+  45% {
+    stroke-dasharray: 80 15;
+    stroke-dashoffset: -5;
+  }
+  50% {
+    stroke-dasharray: 80 15;
+    stroke-dashoffset: -15;
+  }
+  95% {
+    stroke-dasharray: 5 85;
+    stroke-dashoffset: -150;
+  }
   100% {
-    stroke-dasharray: 1 62;
-    stroke-dashoffset: 15;
+    stroke-dasharray: 5 85;
+    stroke-dashoffset: -160;
   }
 }
 
