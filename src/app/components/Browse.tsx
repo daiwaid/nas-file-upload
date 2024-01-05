@@ -8,6 +8,7 @@ import './Browse.css'
 import PageMenu from './PageMenu'
 import Upload from './Upload'
 import Icon from './Icon'
+import ImgPreview from './ImgPreview'
 
 export default function Browse() {
 
@@ -24,6 +25,7 @@ export default function Browse() {
   const columnHeights = useRef<number[]>([])
   const numCols = useRef<number>(4)
   const [colFlex, setColFlex] = useState<number>(100)
+  const [colPadding, setColPadding] = useState<number>(0)
   const [showViewer, setShowViewer] = useState<boolean>(false)
   const [selectedInd, setSelectedInd] = useState<number[]>([0, 0]) // 0: image index, 1: table index
   const [aspectRatio, setAspectRatio] = useState<number>(1)
@@ -36,7 +38,6 @@ export default function Browse() {
   const zoomIn = useRef<any>(null)
   const zoomOut = useRef<any>(null)
   const parentDiv = useRef<any>()
-  const windowSize = useRef<any>()
   
   
 
@@ -250,11 +251,23 @@ export default function Browse() {
 
   // loads images on page start
   useEffect(() => {
-    if (window.innerWidth < 700) numCols.current = 1
-    else if (window.innerWidth < 1120) numCols.current = 2
-    else if (window.innerWidth < 1600) numCols.current = 3
-    else numCols.current = 4
-    lastWindow.current = {height: windowSize.current.clientHeight, width: windowSize.current.clientWidth}
+    if (window.innerWidth < 700) {
+      numCols.current = 1
+      setColPadding(2)
+    }
+    else if (window.innerWidth < 1120) {
+      numCols.current = 2
+      setColPadding(3)
+    }
+    else if (window.innerWidth < 1600) {
+      numCols.current = 3
+      setColPadding(3)
+    }
+    else {
+      numCols.current = 4
+      setColPadding(4)
+    }
+    lastWindow.current = {height: window.innerHeight, width: window.innerWidth}
     setColFlex(1/numCols.current * 100)
     fetchPages()
 
@@ -284,8 +297,7 @@ export default function Browse() {
   const setScroll = (state: boolean) => {
     if (!state) {
       document.documentElement.style.overflowY = 'hidden'
-      parentDiv.current.style.overflowY = 'scroll'
-
+      parentDiv.current.style.overflowY = 'hidden'
     }
     else {
       document.documentElement.style.overflowY = 'auto'
@@ -329,29 +341,40 @@ export default function Browse() {
     if (cols > 0 && cols < 8 && numCols.current !== cols) {
       numCols.current = cols
       loadPage.current = currPage
-      lastWindow.current = {height: windowSize.current.clientHeight, width: windowSize.current.clientWidth}
+      lastWindow.current = {height: window.innerHeight, width: window.innerWidth}
       setColFlex(1/cols * 100)
       reloadImgs()
     }
   }
 
   const onResize = () => {
-    if (Math.abs(lastWindow.current.width - windowSize.current.clientWidth) 
-          + Math.abs(lastWindow.current.height - windowSize.current.clientHeight) > 5) {
+    if (Math.abs(lastWindow.current.width - window.innerWidth) 
+          + Math.abs(lastWindow.current.height - window.innerHeight) > 5) {
 
-      if (windowSize.current.clientWidth < 700) setNumCols(1)
-      else if (windowSize.current.clientWidth < 1120) setNumCols(2)
-      else if (windowSize.current.clientWidth < 1600) setNumCols(3)
-      else setNumCols(4)
+      if (window.innerWidth < 700) {
+        setNumCols(1)
+        setColPadding(2)
+      }
+      else if (window.innerWidth < 1120) {
+        setNumCols(2)
+        setColPadding(3)
+      }
+      else if (window.innerWidth < 1600) {
+        setNumCols(3)
+        setColPadding(3)
+      }
+      else {
+        setNumCols(4)
+        setColPadding(4)
+      }
       
-      setAspectRatio(windowSize.current.clientWidth / windowSize.current.clientHeight)
-      lastWindow.current = {height: windowSize.current.clientHeight, width: windowSize.current.clientWidth}
+      setAspectRatio(window.innerWidth / window.innerHeight)
+      lastWindow.current = {height: window.innerHeight, width: window.innerWidth}
     }
   }
 
   return (
     <div className='falsescroll' ref={parentDiv} tabIndex={-1}>
-      <div className="windowsize" ref={windowSize} tabIndex={-1}></div>
       <div className="title">
         <div className='title-left'>
           <div className='item-left'></div>
@@ -373,8 +396,9 @@ export default function Browse() {
         : <></> }
       <div className="grid">
         {columns.map((col, i) =>
-          <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`}}>
-            {col.map((img) => <img key={img.path} src={'http://192.168.1.252' + img.thumb} alt={img.name} onClick={(e) => onSelect(e.currentTarget, img)} />)}
+          <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`, padding: `0 ${colPadding}px`}}>
+            {col.map((img) => <ImgPreview key={img.path} img={img} width={colFlex} margin={colPadding} cols={numCols.current} onClick={(e) => onSelect(e.currentTarget, img)} /> 
+            )}
           </div>
         )}
       </div>

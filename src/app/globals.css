@@ -26,22 +26,6 @@ body {
   margin: 0;
 }
 
-.btn {
-  height: 40px;
-  stroke-width: 4px;
-  stroke: rgb(var(--foreground-rgb));
-  stroke-linecap: round;
-  fill: none;
-  opacity: 1;
-  cursor: pointer;
-  transition-duration: 250ms;
-}
-
-.inactive .btn {
-  opacity: 0.2;
-  cursor: default;
-}
-
 .menu-backgnd {
   position: fixed;
   top: 0;
@@ -63,18 +47,4 @@ body {
   -webkit-user-select: none; /* Safari */
   -ms-user-select: none; /* IE 10 and IE 11 */
   user-select: none; /* Standard syntax */
-}
-
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  .btn:hover {
-    stroke-width: 5px;
-    stroke: rgb(var(--highlight-rgb));
-    transition-duration: 250ms;
-  }
-  .inactive .btn:hover {
-    stroke-width: 4px;
-    stroke: rgb(var(--foreground-rgb));
-    transition-duration: 250ms;
-  }
 }

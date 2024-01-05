@@ -1,0 +1,26 @@
+.preview-container {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  opacity: 0.8;
+  transition: opacity 250ms;
+}
+
+.play-icon {
+  stroke: rgb(var(--background-rgb));
+  stroke-linecap: round;
+  stroke-width: 5px;
+  fill: rgb(var(--background-rgb));
+  width: 30%;
+}
+
+/* Enable hover only on non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .preview-container:hover {
+    opacity: 0.95;
+    transition: opacity 250ms;
+    cursor: pointer;
+  }
+}

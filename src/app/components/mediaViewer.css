@@ -43,11 +43,6 @@
   opacity: 0.8;
 }
 
-.fill {
-  fill: rgb(var(--highlight-rgb));
-  stroke: rgb(var(--highlight-rgb));
-}
-
 .slider {
   position: relative;
   width: 100%;

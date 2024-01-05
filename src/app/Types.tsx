@@ -7,6 +7,7 @@ export type image = {
   date_created: string,
   path: string,
   thumb: string,
+  type: string,
   table?: string
 }
 

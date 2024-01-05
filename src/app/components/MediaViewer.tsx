@@ -475,11 +475,11 @@ let formatDate = '', formatTime = ''
         <div className="slider-track" ref={sliderTrackRef}>
           {selected && sliderRef.current ? <>
             <ImgContainer key={selected.prev ? selected.prev.path : -1} img={selected.prev} 
-                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} />
+                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} selected={false} />
             <ImgContainer key={selected.curr ? selected.curr.path : -2} img={selected.curr} 
-                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} />
+                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} selected={true} />
             <ImgContainer key={selected.next ? selected.next.path : -3} img={selected.next} 
-                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} />
+                aspectRatio={sliderRef.current.clientWidth / sliderRef.current.clientHeight} margin={margin} selected={false} />
           </> : <div></div>
           }
         </div>

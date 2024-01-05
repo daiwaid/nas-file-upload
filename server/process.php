@@ -38,14 +38,14 @@ function saveFile($tmp_path, $path, $conn, $tbl_name, $file_date=-1, $number=0) 
 
 	move_uploaded_file($tmp_path, $new_path);
 	$new_path = convertHEIC($new_path);
-    if ($file_date > 0) {
+  if ($file_date > 0) {
 		touch($new_path, $file_date);
 	}
 
 	addToTable($conn, $tbl_name, $new_path);
 }
 
-function findDate($path) {
+function findPhotoDate($path) {
     $exif_data = @exif_read_data($path);
     if ($exif_data) { // first try exif data (photos)
         if (array_key_exists('DateTime', $exif_data)) {
@@ -57,10 +57,19 @@ function findDate($path) {
         eval('$array=' . `exiftool -php -TAG '-CreateDate' -dateFormat '%s' "$path"`);
 
         if (array_key_exists('CreateDate', $array[0])) {
-	    return $array[0]['CreateDate'];	
+	        return $array[0]['CreateDate'];	
         }
     }
-    return -1;
+    return filemtime($path);
+}
+
+function findVideoDate($path) {
+    eval('$array=' . `exiftool -php -TAG '-CreationDate' -api largefilesupport=1 -dateFormat '%s' "$path"`);
+
+	if (array_key_exists('CreationDate', $array[0])) {
+		return $array[0]['CreationDate'];
+	}
+    return filemtime($path);
 }
 
 function generateThumb($path, $ext, $orientation) {
@@ -81,7 +90,7 @@ function generateThumb($path, $ext, $orientation) {
     }
 
     $resize_factor = 1;
-    while (max(intdiv($width, $resize_factor), intdiv($height, $resize_factor)) > 2100) {
+    while (max(intdiv($width, $resize_factor), intdiv($height, $resize_factor)) > 1500) {
         $resize_factor *= 2;
     }
 
@@ -100,26 +109,63 @@ function generateThumb($path, $ext, $orientation) {
     $new_file = $thumb_folder . basename($path);
 
     if ($ext === 'jpg' || $ext === 'jpeg') {
-        imagejpeg($resized, $new_file, 60);
+        imagejpeg($resized, $new_file, 75);
     }
     else if ($ext === 'png') {
         imagepng($resized, $new_file);
     }
 
     return $new_file;
+}
 
+function generateVideoThumb($path, $width, $height, $duration) {
+	$ffmpeg = FFMpeg\FFMpeg::create();
+
+	// get the time for thumb
+	$thumb_loc = floor($duration * 0.2);
+
+	// resize if needed
+	$resize_factor = 1;
+	while (max(intdiv($width, $resize_factor), intdiv($height, $resize_factor)) > 1080) {
+		$resize_factor *= 2;
+	}
+
+	$thumb_folder = dirname($path) . '/.thumbs/';
+	if (!file_exists($thumb_folder)) {
+    	mkdir($thumb_folder, 0775, true);
+	}
+
+	$thumb_name = explode('.', basename($path))[0];
+	$thumb_path = $thumb_folder . $thumb_name . '.jpeg';
+
+	$thumb = $ffmpeg->open($path)->frame(FFMpeg\Coordinate\TimeCode::fromSeconds($thumb_loc));
+	
+	if ($resize_factor > 1) {
+		$temp_path = '/tmp/' . $thumb_name . '.jpeg';
+		$thumb->save($temp_path);
+		
+		$image = imagecreatefromjpeg($temp_path);
+		$resized = imagescale($image, intdiv($width, $resize_factor), intdiv($height, $resize_factor), IMG_NEAREST_NEIGHBOUR);
+		imagejpeg($resized, $thumb_path, 70);
+	}
+	else {
+		$thumb->save($thumb_path);
+	}
+
+	return $thumb_path;
 }
 
 function generateTable($name, $conn, $year, $month) {
     $sql = "CREATE TABLE IF NOT EXISTS $name(
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(128),
-            size INT,
-            width INT NOT NULL,
-            height INT NOT NULL,
-            date_created DATETIME,
-            path VARCHAR(512) NOT NULL,
-            thumb VARCHAR(512))";
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(128),
+        size BIGINT,
+        width INT NOT NULL,
+        height INT NOT NULL,
+        date_created DATETIME,
+        path VARCHAR(512) NOT NULL,
+        thumb VARCHAR(512),
+        type VARCHAR(128))";
     $conn->query($sql);
     $stmt = $conn->prepare("INSERT INTO main(name, year, month)
             SELECT ?, $year, $month
@@ -129,51 +175,97 @@ function generateTable($name, $conn, $year, $month) {
 }
 
 function addToTable($conn, $tbl_name, $path) {
-    $extensions = ['jpg', 'jpeg', 'png'];
+    $img_exts = ['jpg', 'jpeg', 'png'];
+		$vid_exts = ['mov', 'mp4'];
     $file_ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-    if (in_array($file_ext, $extensions)) {
 
-        $img_name = basename($path);
-        $img_size = filesize($path);
-        list($width, $height) = getimagesize($path);
+    if (in_array($file_ext, $img_exts) || in_array($file_ext, $vid_exts)) {
+		$file_name = basename($path);
+		$img_size = filesize($path);
+		$timestamp = NULL;
+		
+		if (in_array($file_ext, $img_exts)) {
+			$orientation = 1;
+			list($width, $height) = getimagesize($path);
 
-        $orientation = 1;
+			$exif_data = exif_read_data($path);
+			if ($exif_data) { // first try exif data (photos)
+				if (array_key_exists('DateTime', $exif_data)) {
+					$file_date = new DateTime($exif_data['DateTime']);
+					$timestamp = $file_date->format('Y-m-d H:i:s');
+				}
+				if (array_key_exists('Orientation', $exif_data)) {
+					$orientation = $exif_data['Orientation'];
+					if ($orientation === 6 || $orientation === 8) {
+						$temp = $width;
+						$width = $height;
+						$height = $temp;
+					}
+				}
+			}
+			else { // otherwise try more extensive tool
+				eval('$array=' . `exiftool -php -TAG '-CreateDate' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
 
-        $timestamp = NULL;
-        $exif_data = exif_read_data($path);
-        if ($exif_data) { // first try exif data (photos)
-            if (array_key_exists('DateTime', $exif_data)) {
-                $file_date = new DateTime($exif_data['DateTime']);
-                $timestamp = $file_date->format('Y-m-d H:i:s');
-            }
-            if (array_key_exists('Orientation', $exif_data)) {
-                $orientation = $exif_data['Orientation'];
-                if ($orientation === 6 || $orientation === 8) {
-                    $temp = $width;
-                    $width = $height;
-                    $height = $temp;
-                }
-            }
-        }
-        else { // otherwise try more extensive tool
-            eval('$array=' . `exiftool -php -TAG '-CreateDate' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
+				if (array_key_exists('CreateDate', $array[0])) {
+					$timestamp = $array[0]['CreateDate'];
+				}
+			}
 
-            if (array_key_exists('CreateDate', $array[0])) {
-                $timestamp = $array[0]['CreateDate'];
-            }
-        }
+			
+			$thumb = generateThumb($path, $file_ext, $orientation);
+			$type = 'image';
+		}
+		else {
+			$orientation = 0;
 
-        $thumb = generateThumb($path, $file_ext, $orientation);
-        $thumb = substr($thumb, 10);
-        $path = substr($path, 10);
+			// get taken time and rotation
+			eval('$array=' . `exiftool -php -TAG '-CreationDate' '-Rotation' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
 
+			if (array_key_exists('CreationDate', $array[0])) {
+				$timestamp = $array[0]['CreationDate'];
+				if (array_key_exists('Rotation', $array[0])) {
+					$orientation = $array[0]['Rotation'];
+				}
+			}
+			else { // fallback to upload time
+				eval('$array=' . `exiftool -php -TAG '-CreateDate' '-Rotation' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
 
-        $stmt = $conn->prepare("INSERT INTO $tbl_name(name, size, width, height, date_created, path, thumb)
-            SELECT ?, $img_size, $width, $height, ?, ?, ?
-            WHERE NOT EXISTS( SELECT 1 FROM $tbl_name WHERE name = ? );");
-        $stmt->bind_param('sssss', $img_name, $timestamp, $path, $thumb, $img_name);
-        $stmt->execute();
-    }
+				if (array_key_exists('CreateDate', $array[0])) {
+					$timestamp = $array[0]['CreateDate'];
+					if (array_key_exists('Rotation', $array[0])) {
+						$orientation = $array[0]['Rotation'];
+					}
+				}
+			}
+
+			$ffprobe = FFMpeg\FFProbe::create();
+			$video = $ffprobe->streams($path)->videos()->first();
+
+			if ($orientation % 180 === 0) {
+				$width = $video->get('width');
+				$height = $video->get('height');
+			}
+			else {
+				$width = $video->get('height');
+				$height = $video->get('width');
+			}
+
+			$thumb = generateVideoThumb($path, $width, $height, $video->get('duration'));
+			$type = 'video';
+		}
+		if ($timestamp === NULL) { // if couldn't find time just use upload time
+			$timestamp = new DateTime(filemtime($path));
+			$timestamp = $file_date->format('Y-m-d H:i:s');
+		}
+		$thumb = substr($thumb, 10);
+		$path = substr($path, 10);
+		
+		$stmt = $conn->prepare("INSERT INTO $tbl_name(name, size, width, height, date_created, path, thumb, type)
+			SELECT ?, $img_size, $width, $height, ?, ?, ?, ?
+			WHERE NOT EXISTS( SELECT 1 FROM $tbl_name WHERE name = ? );");
+		$stmt->bind_param('ssssss', $file_name, $timestamp, $path, $thumb, $type, $file_name);
+		$stmt->execute();
+	}
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -189,51 +281,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		exit();
 	}
 
-    if (isset($_FILES['files'])) {
-	$path = '/var/share/lan-drive/';
-	$subfolders = 'uncategorized/';
-    $extensions = ['txt', 'jpg', 'jpeg', 'png', 'gif', 'HEIC'];
+	if (isset($_FILES['files'])) {
+		$path = '/var/share/lan-drive/';
+		$subfolders = 'uncategorized/';
+		$img_exts = ['jpg', 'jpeg', 'png', 'gif', 'heic'];
+		$vid_exts = ['mov', 'mp4'];
 
     $all_files = count($_FILES['files']['tmp_name']);
 
 	for ($i = 0; $i < $all_files; $i++) {
 	
-        $file_name = $_FILES['files']['name'][$i];
-        $file_tmp = $_FILES['files']['tmp_name'][$i];
-        $file_type = $_FILES['files']['type'][$i];
-	    $file_size = $_FILES['files']['size'][$i];
-	    #$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);
+		$file_name = $_FILES['files']['name'][$i];
+		$file_tmp = $_FILES['files']['tmp_name'][$i];
+		$file_type = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
- 	    /*if (!in_array($file_ext, $extensions)) {
-                $errors[] = 'Extension not allowed: ' . $file_name . ' ' . $file_type;
-	    }*/
+		$file_date = 1;
+		if (in_array($file_type, $img_exts)) {
+					$file_date = findPhotoDate($file_tmp);
+		}
+		else if (in_array($file_type, $vid_exts)) {
+		    $file_date = findVideoDate($file_tmp);
+		}
+		else {
+		    continue;
+		}
 
-		$file_date = findDate($file_tmp);
-		$tbl_name = NULL;
-	    if ($file_date > 0) {
-			$file_datetime = new DateTime();
-			$file_datetime->setTimestamp($file_date);
-			$yr_mth = $file_datetime->format('Y-n');
-			$subfolders = $file_datetime->format('Y') . '/' . $yr_mth . '/';
-			
-			$tbl_name = substr($subfolders, 0, -1);
-			$tbl_name = str_replace('/', '$', $tbl_name);
-			$tbl_name = str_replace('-', '_', $tbl_name);
+		$file_datetime = new DateTime();
+		$file_datetime->setTimestamp($file_date);
+		$yr_mth = $file_datetime->format('Y-n');
+		$subfolders = $file_datetime->format('Y') . '/' . $yr_mth . '/';
+		
+		$tbl_name = substr($subfolders, 0, -1);
+		$tbl_name = str_replace('/', '$', $tbl_name);
+		$tbl_name = str_replace('-', '_', $tbl_name);
 
-			$temp = explode('-', $yr_mth);
-			if (!file_exists($path . $subfolders)) {
+		$temp = explode('-', $yr_mth);
+		if (!file_exists($path . $subfolders)) {
 				generateTable($tbl_name, $conn, $temp[0], $temp[1]);	
-			}
 		}
 
 		$folders = $path . $subfolders;
-	    if (!file_exists($folders)) {
-			mkdir($folders, 0775, true);
-	    }
-        $file = $folders . $file_name;
+		if (!file_exists($folders)) {
+		mkdir($folders, 0775, true);
+		}
+		$file = $folders . $file_name;
 
 		saveFile($file_tmp, $file, $conn, $tbl_name, $file_date);
-		convertHEIC($file);
 	}
 
 	//$handle = fopen('share/log.txt', 'c');
