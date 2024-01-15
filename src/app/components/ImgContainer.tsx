@@ -12,7 +12,6 @@ const ImgContainer = memo(({ img, aspectRatio, margin, selected }:
 
   const innerTag = () => {
     if (img) {
-      console.log(img.type)
       const style = aspectRatio > img.width / img.height
                       ? {minHeight: '100%', width: 'auto'}
                       : {minWidth: '100%', height: 'auto'}

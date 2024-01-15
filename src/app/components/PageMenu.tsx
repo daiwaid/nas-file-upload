@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import './PageMenu.css'
 import { table } from '../Types'
 import Icon from './Icon'
+import MenuBackground from './MenuBackground'
 
 export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }: { pages: table[], currPage: number, 
                                     updateCurrPage: (ind: number) => void, setScroll: (state: boolean) => void }) {
@@ -14,7 +15,7 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   const lastClick = useRef<number>(0)
 
   const menu = useRef<any>()
-  const menuBackground = useRef<any>()
+  const [menuOpen, setmenuOpen] = useState(false)
   const titleFixed = useRef<any>()
   const lastSeled = useRef<number[]>([0, 0])
 
@@ -46,19 +47,19 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
     }
   }
 
-  const openMenu = (e: any) => {
+  const openMenu = (e: React.MouseEvent) => {
     e.stopPropagation()
     lastSeled.current = [selectedYr, selectedMn]
     setScroll(false)
-    menuBackground.current.classList.add('visible')
+    setmenuOpen(true)
     menu.current.style.transform = 'translateX(-50%) translateY(0px)'
     titleFixed.current.style.display = 'inline'
   }
 
-  const closeMenu = (e: any) => {
+  const closeMenu = (e: React.MouseEvent) => {
     e.stopPropagation()
     setScroll(true)
-    menuBackground.current.classList.remove('visible')
+    setmenuOpen(false)
     menu.current.style.transform = 'translateX(-50%) translateY(-300px)'
     titleFixed.current.style.display = 'none'
     const ind = yearsLen.current[selectedYr] + selectedMn - 3
@@ -67,10 +68,10 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   }
 
   const disgardMenu = () => {
-    menuBackground.current.classList.remove('visible')
     menu.current.style.transform = 'translateX(-50%) translateY(-300px)'
     titleFixed.current.style.display = 'none'
     setScroll(true)
+    setmenuOpen(false)
     setSelectedYr(lastSeled.current[0])
     setSelectedMn(lastSeled.current[1])
   }
@@ -122,7 +123,6 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
     return (
       <div>
         <div className="title-fixed" ref={titleFixed}></div>
-        <div className='menu-backgnd' ref={menuBackground} onClick={disgardMenu}></div>
         <div className='sel-area' onClick={openMenu}>{pages[currPage] ? pages[currPage].year + '-' + pages[currPage].month : ''}</div>
         <div className="dropdown" ref={menu}>
           <div></div>
@@ -176,6 +176,7 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
             })}
           </div>
         </div>
+        {menuOpen ? <MenuBackground onClick={disgardMenu} /> : <></>}
       </div>
     )
   }

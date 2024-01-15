@@ -297,7 +297,7 @@ export default function Browse() {
   const setScroll = (state: boolean) => {
     if (!state) {
       document.documentElement.style.overflowY = 'hidden'
-      parentDiv.current.style.overflowY = 'hidden'
+      parentDiv.current.style.overflowY = 'scroll'
     }
     else {
       document.documentElement.style.overflowY = 'auto'

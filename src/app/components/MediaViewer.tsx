@@ -27,9 +27,9 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
   const sliderRef = useRef<any>()
   const sliderTrackRef = useRef<any>()
-  const startX = useRef(0)
   const currX = useRef(0)
   const prevX = useRef(0)
+  const prevY = useRef(0)
   const endX = useRef(0)
   const movedX = useRef(0)
   const direction = useRef(0)
@@ -166,7 +166,6 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
   const swipeStart = (clientX: number) => {
     prevX.current = clientX // keep track of last mouse position
-    startX.current = currX.current
     movedX.current = 0 // keep track of how much mouse moved
     startTime.current = Date.now()
     swiping.current = true
@@ -296,17 +295,13 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
   const prevImg = () => {
     if (!selected.prev) return
 
-    const frameWidth = sliderRef.current.clientWidth + margin*2
     toLoad.current -= 1
-    currX.current -= frameWidth
-    loadPrev(false)
+    loadPrev()
   }
   const nextImg = () => {
     if (!selected.next) return
 
-    const frameWidth = sliderRef.current.clientWidth + margin*2
     toLoad.current += 1
-    currX.current += frameWidth
     loadNext(false)
   }
 
@@ -331,6 +326,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
   const onMouse = (event: React.MouseEvent<HTMLDivElement>) => {
     if (fullscreen) {
+      prevY.current = event.clientY
       fullscrTime.current = Date.now()
     
       if (hidden.current === true) {
@@ -378,7 +374,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
       setFullscreen(true)
       titleBar.current.classList.add('fullscreen')
       interval.current = setInterval(() => {
-        if (hidden.current === false && (Date.now() - fullscrTime.current) > 1000) {
+        if (hidden.current === false && (Date.now() - fullscrTime.current) > 1000 && prevY.current > 80) {
           titleBar.current.classList.add('hidden')
           document.documentElement.style.cursor = 'none'
           hidden.current = true
@@ -453,10 +449,10 @@ let formatDate = '', formatTime = ''
   }
 
   return (
-    <div className='viewer' ref={viewer} onKeyDown={onKeyDown} tabIndex={0}>
+    <div className='viewer' ref={viewer} onKeyDown={onKeyDown} onMouseMove={onMouse} tabIndex={0}>
       <div className='title prevent-select' ref={titleBar}>
         <div className='title-left'>
-          <div className='item-left' onClick={hideViewer} style={{rotate: '45deg'}}>{<Icon icon='ex'/>}</div>
+          <div className='item-left' onClick={hideViewer}>{<Icon icon='ex'/>}</div>
           <div className={selected.prev ? 'item-right' : 'item-right inactive'} ref={lBttn} onClick={prevImg} style={{rotate: '180deg'}}>{<Icon icon='arrow' className='nonmobile'/>}</div>
         </div>
         <div className='title-center-mv'>
@@ -473,7 +469,7 @@ let formatDate = '', formatTime = ''
           </div>
         </div>
       </div>
-      <div className="slider prevent-select" ref={sliderRef} onMouseMove={onMouse}
+      <div className="slider prevent-select" ref={sliderRef}
           onTouchStart={touchStart} onTouchMove={touchAction} onTouchEnd={touchEnd} onTouchCancel={touchEnd} >
         <div className="slider-track" ref={sliderTrackRef}>
           {selected && sliderRef.current ? <>

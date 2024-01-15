@@ -1,6 +1,6 @@
 .delete-menu {
   position: relative;
-  width: 50px;
+  width: 40px;
 }
 
 .delete-dropdown {
@@ -13,4 +13,5 @@
   text-align: center;
   transform: translateY(-150px);
   transition-duration: 250ms;
+  z-index: 1;
 }

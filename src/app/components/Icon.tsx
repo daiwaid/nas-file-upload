@@ -37,8 +37,8 @@ const Icon = memo(({ icon, className='' }: { icon: string, className?: string })
                 <path d="M 17 8 L 33 8"/>
               </>,
     ex:       <>
-                <path d="M 7 25 L 43 25"/>
-                <path d="M 25 7 L 25 43"/>
+                <path d="M 12 12 L 38 38"/>
+                <path d="M 12 38 L 38 12"/>
               </>,
     check:    <>
                 <path d="M 20 35 L 40 12"/>
