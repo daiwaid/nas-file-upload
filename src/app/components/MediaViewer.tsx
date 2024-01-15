@@ -57,15 +57,13 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
    // won't delete if only 1 image left
     if ((selected.prev || selected.next) && selected.curr) {
       deleteImg(selected.curr).then( res => {
-        if (res) {
-          toLoad.current += 1
-          return loadNext(true)
-        }
-        return false
-      }).then( res => {
-        if (!res) {
-          toLoad.current -= 1
-          loadPrev(true)
+        if (res || true) {
+          loadNext(true).then( res => {
+            if (!res) {
+              toLoad.current -= 1
+              loadPrev(true)
+            }
+          })
         }
       })
     }
@@ -73,7 +71,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
 
   const loadPrev = async (del=false): Promise<boolean> => {
     if (loadingImgs.current || toLoad.current >= 0) // prevent concurrent loads
-      return Promise.resolve(false)
+      return false
 
     loadingImgs.current = true
     const num = -toLoad.current
@@ -113,41 +111,45 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
       return true
     }
     loadingImgs.current = false
-    return Promise.resolve(false)
+    return false
   }
 
   const loadNext = async (del=false): Promise<boolean> => {
-    if (loadingImgs.current || toLoad.current <= 0) // prevent concurrent loads
-      return Promise.resolve(false)
-
-    loadingImgs.current = true
-    const num = toLoad.current
-    toLoad.current = 0
-    const imgs = [selected.curr]
-
-    let newInd = await getNext(false)
-    if (newInd) {
-      imgs.push(selected.next)
-
-      const promises = []
-      for (let i = 1; i < num; i++) {
-        promises.push(getNext(false, newInd))
+    if (del) {
+      const newInd = await getNext(false)
+      if (newInd) {
+        setSelected({ prev: selected.prev, curr: selected.next, next: getImage(newInd) })
+        return true
       }
-      const responses = await Promise.all(promises)
-      for (const newNewInd of responses) {
-        if (!newNewInd) break
+      return false
+    }
+    else if (!loadingImgs.current && toLoad.current >= 0) { // prevent concurrent loads
+      loadingImgs.current = true
+      const num = toLoad.current
+      toLoad.current = 0
+      const imgs = [selected.curr]
 
-        newInd = newNewInd
-        imgs.push(getImage(newInd))
-      }
+      let newInd = await getNext(false)
+      if (newInd) {
+        imgs.push(selected.next)
 
-      const nextInd = await getNext(false, newInd)
-      if (del)
-        setSelected({ prev: selected.prev, curr: selected.next, next: getImage(nextInd) })
-      else
+        const promises = []
+        for (let i = 1; i < num; i++) {
+          promises.push(getNext(false, newInd))
+        }
+        const responses = await Promise.all(promises)
+        for (const newNewInd of responses) {
+          if (!newNewInd) break
+
+          newInd = newNewInd
+          imgs.push(getImage(newInd))
+        }
+
+        const nextInd = await getNext(false, newInd)
         setSelected({ prev: imgs[imgs.length - 2], curr: imgs[imgs.length - 1], next: getImage(nextInd) })
 
-      if (newInd) setSelectedInd(newInd)
+        if (newInd) setSelectedInd(newInd)
+      }
 
       // getNext(true, nextInd) // preload
       // if more imgs to load
@@ -157,8 +159,9 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
       loadingImgs.current = false
       return true
     }
+
     loadingImgs.current = false
-    return Promise.resolve(false)
+    return false
   }
 
   const swipeStart = (clientX: number) => {

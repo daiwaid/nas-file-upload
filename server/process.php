@@ -50,15 +50,14 @@ function findPhotoDate($path) {
     if ($exif_data) { // first try exif data (photos)
         if (array_key_exists('DateTime', $exif_data)) {
             $file_date = new DateTime($exif_data['DateTime']);
-	    return $file_date->getTimestamp();
+            return $file_date->getTimestamp();
         }
     }
-    else { // otherwise try more extensive tool
-        eval('$array=' . `exiftool -php -TAG '-CreateDate' -dateFormat '%s' "$path"`);
+     // otherwise try more extensive tool
+    eval('$array=' . `exiftool -php -TAG '-CreateDate' -dateFormat '%s' "$path"`);
 
-        if (array_key_exists('CreateDate', $array[0])) {
-	        return $array[0]['CreateDate'];	
-        }
+    if (array_key_exists('CreateDate', $array[0])) {
+        return $array[0]['CreateDate'];	
     }
     return filemtime($path);
 }
@@ -203,7 +202,7 @@ function addToTable($conn, $tbl_name, $path) {
 					}
 				}
 			}
-			else { // otherwise try more extensive tool
+			if ($timestamp === NULL) { // otherwise try more extensive tool
 				eval('$array=' . `exiftool -php -TAG '-CreateDate' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
 
 				if (array_key_exists('CreateDate', $array[0])) {
@@ -254,8 +253,7 @@ function addToTable($conn, $tbl_name, $path) {
 			$type = 'video';
 		}
 		if ($timestamp === NULL) { // if couldn't find time just use upload time
-			$timestamp = new DateTime(filemtime($path));
-			$timestamp = $file_date->format('Y-m-d H:i:s');
+			$timestamp = date('Y-m-d H:i:s', filemtime($path));
 		}
 		$thumb = substr($thumb, 10);
 		$path = substr($path, 10);
@@ -272,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$host = 'localhost';
 	$dbname='photo_album';
 	$username = 'root';
-	$password = '???';
+	$password = '20011210';
 
 	$conn = new mysqli($host, $username, $password, $dbname);
 

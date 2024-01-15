@@ -1,5 +1,6 @@
 {
     "require": {
-        "maestroerror/php-heic-to-jpg": "^1.0"
+        "maestroerror/php-heic-to-jpg": "^1.0",
+        "php-ffmpeg/php-ffmpeg": "^1.2"
     }
 }
