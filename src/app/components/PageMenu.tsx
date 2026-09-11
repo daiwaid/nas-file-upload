@@ -14,9 +14,9 @@ export default function PageMenu({ pages, currPage, updateCurrPage, setScroll }:
   const [selectedMn, setSelectedMn] = useState<number>(3)
   const lastClick = useRef<number>(0)
 
-  const menu = useRef<any>()
+  const menu = useRef<any>(null)
   const [menuOpen, setmenuOpen] = useState(false)
-  const titleFixed = useRef<any>()
+  const titleFixed = useRef<any>(null)
   const lastSeled = useRef<number[]>([0, 0])
 
   const updateYear = (ind: number) => {

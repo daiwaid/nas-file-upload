@@ -52,12 +52,13 @@
   display: flex;
   flex-wrap: wrap;
   width: 100%;
+  margin-top: 3px;
 }
 
 .column img {
   vertical-align: middle;
   width: 100%;
-  border-radius: 10px;
+  border-radius: var(--border-radius);
 }
 
 .btn {
@@ -68,7 +69,7 @@
   fill: none;
   opacity: 1;
   cursor: pointer;
-  transition-duration: 250ms;
+  transition-duration: var(--transition-duration);
 }
 
 .inactive .btn {
@@ -99,11 +100,11 @@
   .btn:hover {
     stroke-width: 5px;
     stroke: rgb(var(--highlight-rgb));
-    transition-duration: 250ms;
+    transition-duration: var(--transition-duration);
   }
   .inactive .btn:hover {
     stroke-width: 4px;
     stroke: rgb(var(--foreground-rgb));
-    transition-duration: 250ms;
+    transition-duration: var(--transition-duration);
   }
 }

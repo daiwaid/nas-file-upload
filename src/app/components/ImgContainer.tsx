@@ -3,12 +3,13 @@ import './ImgContainer.css'
 import { image } from "../Types"
 
 
-const ImgContainer = memo(({ img, aspectRatio, margin, selected }: 
-                          { img: image|undefined, aspectRatio: number, margin: number, selected: boolean }) =>  {
+const ImgContainer = memo(({ img, aspectRatio, margin, selected, imgRef, slideshow, onVideoEnded }: 
+                          { img: image|undefined, aspectRatio: number, margin: number, 
+                            selected: boolean, imgRef: any, slideshow?: boolean, onVideoEnded?: () => void }) =>  {
 
-  const imgContainer = useRef<any>()
   const preload = new Image()
   const [loaded, setLoaded] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const innerTag = () => {
     if (img) {
@@ -20,7 +21,9 @@ const ImgContainer = memo(({ img, aspectRatio, margin, selected }:
         return <img src={`http://192.168.1.252${img.path}`} alt={img.name} style={style} />
       }
       if (img.type === 'video' && selected) {
-        return <video src={`http://192.168.1.252${img.path}`} controls style={style} />
+        return <video ref={videoRef} src={`http://192.168.1.252${img.path}`} controls
+            autoPlay={slideshow} playsInline style={style}
+            onEnded={slideshow ? onVideoEnded : undefined} />
       }
     }
     return <></>
@@ -33,13 +36,21 @@ const ImgContainer = memo(({ img, aspectRatio, margin, selected }:
     }
   }, [img])
 
+  useEffect(() => {
+    if (!slideshow || !selected || img?.type !== 'video') return
+    const video = videoRef.current
+    if (!video) return
+    video.muted = false
+    video.play().catch(() => {})
+  }, [slideshow, selected, img])
+
   return (
     <>
       { img
-        ? <div className='img-container' ref={imgContainer} style={{backgroundImage: `url('http://192.168.1.252${img.thumb}')`, margin: `0 ${margin}px`}}>
+        ? <div className='img-container' ref={imgRef} style={{backgroundImage: `url('http://192.168.1.252${img.thumb}')`, margin: `0 ${margin}px`}}>
             {innerTag()}
           </div> 
-        : <div className='img-container' ref={imgContainer} style={{margin:  `0 ${margin}px`}}></div> }
+        : <div className='img-container' ref={imgRef} style={{margin:  `0 ${margin}px`}}></div> }
     </>
   )
 })

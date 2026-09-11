@@ -1,18 +1,9 @@
-import { useRef } from "react"
 import { image } from "../Types"
 import './ImgPreview.css'
 
 
 export default function ImgPreview({ img, width, margin, cols, onClick }: 
                       { img: image, width: number, margin: number, cols: number, onClick: (e: React.MouseEvent) => void }) {
-
-  // const mouseEnter = () => {
-  //   svgRef.current.style.
-  // }
-
-  const mouseLeave = () => {
-
-  }
 
   const imgRatio = img.height / img.width
   const actualWidth = (window.innerWidth - cols * margin * 2) * width / 100

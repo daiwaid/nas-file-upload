@@ -5,7 +5,7 @@ import MenuBackground from './MenuBackground'
 
 export default function DeleteBtn({ removeImg }: { removeImg: () => void }) {
   const [menuOpen, setmenuOpen] = useState(false)
-  const dropdown = useRef<any>()
+  const dropdown = useRef<any>(null)
   
 
   const openMenu = () => {

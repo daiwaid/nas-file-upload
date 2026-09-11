@@ -25,7 +25,6 @@ export default function Browse() {
   const columnHeights = useRef<number[]>([])
   const numCols = useRef<number>(4)
   const [colFlex, setColFlex] = useState<number>(100)
-  const [colPadding, setColPadding] = useState<number>(0)
   const [showViewer, setShowViewer] = useState<boolean>(false)
   const [selectedInd, setSelectedInd] = useState<number[]>([0, 0]) // 0: image index, 1: table index
   const [aspectRatio, setAspectRatio] = useState<number>(1)
@@ -37,7 +36,7 @@ export default function Browse() {
   const nextButton = useRef<any>(null)
   const zoomIn = useRef<any>(null)
   const zoomOut = useRef<any>(null)
-  const parentDiv = useRef<any>()
+  const parentDiv = useRef<any>(null)
   
   
 
@@ -96,8 +95,8 @@ export default function Browse() {
       p.then(r => {
         const pgs: table[] = Object.values(r.data);
         pages.current = JSON.parse(JSON.stringify(pgs))
-        reloadImgs()
-        setCurrPage(0)
+        //TODO: add error handling
+        updateCurrPage(0)
       })
   }
 
@@ -126,7 +125,7 @@ export default function Browse() {
   }
 
   const reloadImgs = () => {
-    fetchImgs(true)
+    fetchImgs(true, currPage)
   }
 
   const getImage = (inds: number[]|undefined): image|undefined => {
@@ -251,22 +250,15 @@ export default function Browse() {
 
   // loads images on page start
   useEffect(() => {
-    if (window.innerWidth < 700) {
+    if (window.innerWidth < 700)
       numCols.current = 1
-      setColPadding(2)
-    }
-    else if (window.innerWidth < 1120) {
+    else if (window.innerWidth < 1120)
       numCols.current = 2
-      setColPadding(3)
-    }
-    else if (window.innerWidth < 1600) {
+    else if (window.innerWidth < 1600)
       numCols.current = 3
-      setColPadding(3)
-    }
-    else {
+    else
       numCols.current = 4
-      setColPadding(4)
-    }
+
     lastWindow.current = {height: window.innerHeight, width: window.innerWidth}
     setColFlex(1/numCols.current * 100)
     fetchPages()
@@ -278,7 +270,7 @@ export default function Browse() {
     if (ind >= 0 && ind < pages.current.length) {
       loadPage.current = ind
       setCurrPage(ind)
-      reloadImgs()
+      fetchImgs(true, ind)
     }
   }
 
@@ -296,12 +288,14 @@ export default function Browse() {
 
   const setScroll = (state: boolean) => {
     if (!state) {
-      document.documentElement.style.overflowY = 'hidden'
-      parentDiv.current.style.overflowY = 'scroll'
+      document.body.style.overflow = 'hidden'
+      // document.body.style.height = '100vh'
+      parentDiv.current.style.overflow = 'scroll'
     }
     else {
-      document.documentElement.style.overflowY = 'auto'
-      parentDiv.current.style.overflowY = 'visible'
+      document.body.style.overflow = 'auto'
+      // document.body.style.height = 'auto'
+      parentDiv.current.style.overflow = 'visible'
     }
   }
 
@@ -351,22 +345,14 @@ export default function Browse() {
     if (Math.abs(lastWindow.current.width - window.innerWidth) 
           + Math.abs(lastWindow.current.height - window.innerHeight) > 5) {
 
-      if (window.innerWidth < 700) {
+      if (window.innerWidth < 700)
         setNumCols(1)
-        setColPadding(2)
-      }
-      else if (window.innerWidth < 1120) {
+      else if (window.innerWidth < 1120)
         setNumCols(2)
-        setColPadding(3)
-      }
-      else if (window.innerWidth < 1600) {
+      else if (window.innerWidth < 1600)
         setNumCols(3)
-        setColPadding(3)
-      }
-      else {
+      else
         setNumCols(4)
-        setColPadding(4)
-      }
       
       setAspectRatio(window.innerWidth / window.innerHeight)
       lastWindow.current = {height: window.innerHeight, width: window.innerWidth}
@@ -386,7 +372,7 @@ export default function Browse() {
           <div className='title-right-grid'>
             <div className='item-right' ref={zoomIn} onClick={() => setNumCols(numCols.current-1)}>{<Icon icon='magnifyUp' className='nonmobile'/>}</div>
             <div className='item-right' ref={zoomOut} onClick={() => setNumCols(numCols.current+1)}>{<Icon icon='magnifyDown' className='nonmobile'/>}</div>
-            <Upload reloadImgs={reloadImgs} />
+            <Upload refresh={fetchPages} />
           </div>
         </div>
       </div>
@@ -396,8 +382,8 @@ export default function Browse() {
         : <></> }
       <div className="grid">
         {columns.map((col, i) =>
-          <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`, padding: `0 ${colPadding}px`}}>
-            {col.map((img) => <ImgPreview key={img.path} img={img} width={colFlex} margin={colPadding} cols={numCols.current} onClick={(e) => onSelect(e.currentTarget, img)} /> 
+          <div key={i} className='column' style={{flex: `${colFlex}%`, maxWidth: `${colFlex}%`, padding: `0 3px`}}>
+            {col.map((img) => <ImgPreview key={img.path} img={img} width={colFlex} margin={3} cols={numCols.current} onClick={(e) => onSelect(e.currentTarget, img)} /> 
             )}
           </div>
         )}

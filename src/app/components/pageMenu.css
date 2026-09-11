@@ -2,7 +2,7 @@
   text-align: center;
   font-size: 2em;
   cursor: pointer;
-  transition-duration: 250ms;
+  transition-duration: var(--transition-duration);
 }
 .sel-area:hover {
   color: rgb(var(--highlight-rgb));
@@ -30,7 +30,7 @@
   font-size: 30px;
   background-color: rgb(var(--title-rgb));
   border-radius: 10px;
-  transition-duration: 250ms;
+  transition-duration: var(--transition-duration);
   transform: translateX(-50%) translateY(-300px);
   z-index: 1;
 }

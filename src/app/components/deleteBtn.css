@@ -12,6 +12,6 @@
   grid-template-columns: 1fr;
   text-align: center;
   transform: translateY(-150px);
-  transition-duration: 250ms;
+  transition-duration: var(--transition-duration);
   z-index: 1;
 }

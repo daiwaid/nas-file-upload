@@ -4,7 +4,7 @@ import { useRef, useState } from "react"
 import StatusIcon from "./StatusIcon"
 import './Upload.css'
 
-export default function Upload({ reloadImgs }: { reloadImgs: () => void }) {
+export default function Upload({ refresh }: { refresh: () => void }) {
   const [status, setStatus] = useState('Upload')
 
   const form = useRef<any>(null)
@@ -29,7 +29,7 @@ export default function Upload({ reloadImgs }: { reloadImgs: () => void }) {
     uploadFiles(files)
     .then(res => {
       setStatus('Uploaded')
-      reloadImgs()
+      refresh()
       setTimeout(() => setStatus('Upload'), 3000)
     })
   }

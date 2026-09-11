@@ -10,6 +10,7 @@
   z-index: 2;
   display: flex;
   flex-flow: column;
+  touch-action: none;
 }
 
 .viewer .title {

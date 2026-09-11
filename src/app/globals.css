@@ -4,6 +4,9 @@
   --background-rgb: 200, 200, 200;
   --select-rgb: 220, 220, 220;
   --title-rgb: 240, 240, 240;
+  
+  --border-radius: 10px;
+  --transition-duration: 250ms;
 }
 
 @media (prefers-color-scheme: dark) {
