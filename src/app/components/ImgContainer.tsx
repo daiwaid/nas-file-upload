@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react"
+import { API_BASE } from "../api"
 import './ImgContainer.css'
 import { image } from "../Types"
 
@@ -18,10 +19,10 @@ const ImgContainer = memo(({ img, aspectRatio, margin, selected, imgRef, slidesh
                       : {minWidth: '100%', height: 'auto'}
 
       if (img.type === 'image' && loaded) {
-        return <img src={`http://192.168.1.252${img.path}`} alt={img.name} style={style} />
+        return <img src={`${API_BASE}${img.path}`} alt={img.name} style={style} />
       }
       if (img.type === 'video' && selected) {
-        return <video ref={videoRef} src={`http://192.168.1.252${img.path}`} controls
+        return <video ref={videoRef} src={`${API_BASE}${img.path}`} controls
             autoPlay={slideshow} playsInline style={style}
             onEnded={slideshow ? onVideoEnded : undefined} />
       }
@@ -31,7 +32,7 @@ const ImgContainer = memo(({ img, aspectRatio, margin, selected, imgRef, slidesh
 
   useEffect(() => {
     if (img) {
-      preload.src = `http://192.168.1.252${img.path}`
+      preload.src = `${API_BASE}${img.path}`
       preload.onload = () => setLoaded(true)
     }
   }, [img])
@@ -47,7 +48,7 @@ const ImgContainer = memo(({ img, aspectRatio, margin, selected, imgRef, slidesh
   return (
     <>
       { img
-        ? <div className='img-container' ref={imgRef} style={{backgroundImage: `url('http://192.168.1.252${img.thumb}')`, margin: `0 ${margin}px`}}>
+        ? <div className='img-container' ref={imgRef} style={{backgroundImage: `url('${API_BASE}${img.thumb}')`, margin: `0 ${margin}px`}}>
             {innerTag()}
           </div> 
         : <div className='img-container' ref={imgRef} style={{margin:  `0 ${margin}px`}}></div> }

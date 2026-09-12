@@ -1,3 +1,4 @@
+import { API_BASE } from "../api"
 import { image } from "../Types"
 import './ImgPreview.css'
 
@@ -22,7 +23,7 @@ export default function ImgPreview({ img, width, margin, cols, onClick }:
           : <></>}
       </div>
       
-      <img src={'http://192.168.1.252' + img.thumb} alt={img.name} style={{margin: `${margin}px 0`}} />
+      <img src={API_BASE + img.thumb} alt={img.name} style={{margin: `${margin}px 0`}} />
     </>
   )
   }

@@ -58,7 +58,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
   const canSwitchRight = useRef(true)
 
   const margin = 5
-  const maxZoomLevel = 2
+  const maxZoomLevel = 10
   const zoomFactor = Math.sqrt(2)
   const menuOffset = 50
 
@@ -81,7 +81,7 @@ export default function MediaViewer({ selectedInd, aspectRatio, setSelectedInd, 
    // won't delete if only 1 image left
     if ((selected.prev || selected.next) && selected.curr) {
       deleteImg(selected.curr).then( res => {
-        if (res || true) {
+        if (res) {
           loadNext(true).then( res => {
             if (!res) {
               toLoad.current -= 1

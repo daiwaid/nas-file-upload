@@ -1,19 +1,12 @@
 <?php 
 
+require __DIR__ . '/db.php';
+
+header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: content-type");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $host = 'localhost';
-  $dbname='photo_album';
-  $username = 'root';
-  $password = '???';
-
-  $conn = new mysqli($host, $username, $password, $dbname);
-
-  if ($conn->connect_error) {
-    print_r("could not connect to the database:" . $pe->getMessage());
-    exit();
-  }
+  $conn = dbConnect();
 
   $base_dir = '/var/share';
   // read data from post request

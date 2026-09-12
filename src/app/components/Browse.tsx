@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
+import { API_BASE } from '../api'
 import MediaViewer from './MediaViewer'
 import { image, table } from '../Types'
 import './Browse.css'
@@ -9,6 +10,8 @@ import PageMenu from './PageMenu'
 import Upload from './Upload'
 import Icon from './Icon'
 import ImgPreview from './ImgPreview'
+
+const POLL_MS = 30000
 
 export default function Browse() {
 
@@ -37,8 +40,11 @@ export default function Browse() {
   const zoomIn = useRef<any>(null)
   const zoomOut = useRef<any>(null)
   const parentDiv = useRef<any>(null)
-  
-  
+  const columnsRef = useRef<image[][]>([])
+  const selectedIndRef = useRef(selectedInd)
+  const syncFeedRef = useRef<() => Promise<void>>(async () => {})
+  columnsRef.current = columns
+  selectedIndRef.current = selectedInd
 
   const lazyLoadImgs = async (clear=false): Promise<any> => {
     if (!pages.current[currPage]) return
@@ -91,11 +97,12 @@ export default function Browse() {
   }
 
   const fetchPages = () => {
-    const p = axios.get('http://192.168.1.252/serve.php')
-      p.then(r => {
+    axios.get(`${API_BASE}/serve.php`)
+      .then(r => {
         const pgs: table[] = Object.values(r.data);
         pages.current = JSON.parse(JSON.stringify(pgs))
-        //TODO: add error handling
+        images.current = {}
+        fetching.current = false
         updateCurrPage(0)
       })
   }
@@ -105,7 +112,7 @@ export default function Browse() {
       fetching.current = true
       const tblName = pages.current[page].name
       if (force || !images.current[tblName]) {
-        const p = await axios.get('http://192.168.1.252/serve.php?name=' + pages.current[page].name)
+        const p = await axios.get(`${API_BASE}/serve.php?name=` + pages.current[page].name)
         const imgs: image[] = Object.values(p.data)
         const tblName_1 = pages.current[page].name
         const imgsCpy: image[] = []
@@ -143,7 +150,7 @@ export default function Browse() {
       const table = images.current[selectedPage]
       if (preload) {
         if (table[indicies[0]-1])
-          new Image().src = 'http://192.168.1.252' + table[indicies[0]-1].thumb
+          new Image().src = API_BASE + table[indicies[0]-1].thumb
       }
       else {
         return Promise.resolve([indicies[0]-1, indicies[1]])
@@ -155,7 +162,7 @@ export default function Browse() {
       if (images.current[prevPage.name]) { // if prev page is already fetched
         const ind = images.current[prevPage.name].length - 1
         if (preload)
-          new Image().src = 'http://192.168.1.252' + images.current[prevPage.name][ind].thumb
+          new Image().src = API_BASE + images.current[prevPage.name][ind].thumb
         else
           return Promise.resolve([ind, indicies[1] - 1])
       }
@@ -174,7 +181,7 @@ export default function Browse() {
     // if image is in current page
     if (table && indicies[0] < table.length - 1) {
       if (preload)
-        new Image().src = 'http://192.168.1.252' + table[indicies[0]+1].thumb
+        new Image().src = API_BASE + table[indicies[0]+1].thumb
       else
         return Promise.resolve([indicies[0] + 1, indicies[1]])
     }
@@ -183,7 +190,7 @@ export default function Browse() {
 
       if (images.current[nextPage.name]) { // if next page already fetched
         if (preload)
-          new Image().src = 'http://192.168.1.252' + images.current[nextPage.name][0].thumb
+          new Image().src = API_BASE + images.current[nextPage.name][0].thumb
         else
           return Promise.resolve([0, indicies[1] + 1])
       }
@@ -197,16 +204,141 @@ export default function Browse() {
 
   // delete the currently selected image
   const deleteImg = (img: image): Promise<boolean> => {
-    if (img.table) {
-      return axios.post('http://192.168.1.252/remove.php', {
-        table: img.table,
+    const tblName = img.table
+    if (tblName) {
+      return axios.post(`${API_BASE}/remove.php`, {
+        table: tblName,
         name: img.name
-      }).then(
-        r => fetchImgs(false, selectedInd[1], ()=>Promise.resolve(true), true)
-      ).catch( r => Promise.resolve(false) )
+      }).then(() => {
+        const table = images.current[tblName]
+        if (table) {
+          const idx = table.findIndex((i: image) => i.path === img.path)
+          if (idx !== -1) {
+            table.splice(idx, 1)
+            if (tblName === pages.current[loadPage.current]?.name && idx < numLoaded.current) {
+              numLoaded.current -= 1
+            }
+          }
+        }
+        setColumns(cols => cols.map(col => col.filter(i => i.path !== img.path)))
+        return true
+      }).catch(() => false)
     }
     return Promise.resolve(false)
   }
+
+  const relayoutLoaded = () => {
+    const shown = columnsRef.current.flat()
+    const startName = shown.find(img => img.table && images.current[img.table])?.table
+      ?? pages.current[loadPage.current]?.name
+    const startInd = pages.current.findIndex(p => p.name === startName)
+    if (startInd < 0) return
+
+    const targetCount = Math.max(shown.length, 1)
+    const targetHeight = Math.max(loadedHeight.current, window.scrollY + window.innerHeight * 2)
+    const actualWidth = window.innerWidth / numCols.current
+    const newColumns: image[][] = Array.from({ length: numCols.current }, () => [])
+    columnHeights.current = new Array(numCols.current).fill(0)
+    pageHeights.current = []
+
+    let pageInd = startInd
+    let count = 0
+    while (pageInd < pages.current.length) {
+      const tblName = pages.current[pageInd].name
+      const list = images.current[tblName]
+      if (!list) {
+        if (pageInd > startInd) {
+          loadPage.current = pageInd - 1
+          numLoaded.current = images.current[pages.current[pageInd - 1].name].length
+        }
+        break
+      }
+
+      let i = 0
+      while (i < list.length && (count < targetCount || Math.min(...columnHeights.current) < targetHeight)) {
+        const col = columnHeights.current.reduce((p, c, idx, a) => c >= a[p] ? p : idx, -1)
+        const img = list[i]
+        columnHeights.current[col] += Number(img.height) / Number(img.width) * actualWidth
+        newColumns[col].push(img)
+        count++
+        i++
+      }
+
+      if (i < list.length) {
+        numLoaded.current = i
+        loadPage.current = pageInd
+        break
+      }
+
+      pageHeights.current.push(Math.min(...columnHeights.current) + 10)
+      pageInd += 1
+      numLoaded.current = 0
+      loadPage.current = pageInd < pages.current.length ? pageInd : pageInd - 1
+    }
+
+    loadedHeight.current = columnHeights.current.length ? Math.min(...columnHeights.current) : 0
+    const threshold = window.scrollY === 0 ? 0 : window.scrollY + 100
+    let ph = 0
+    while (ph < pageHeights.current.length && threshold >= pageHeights.current[ph]) ph++
+    phCurr.current = ph
+    setCurrPage(startInd + ph)
+    setColumns(newColumns)
+  }
+
+  const syncFeed = async () => {
+    if (fetching.current || document.hidden || pages.current.length === 0) return
+
+    const sel = selectedIndRef.current
+    const selPath = images.current[pages.current[sel[1]]?.name]?.[sel[0]]?.path
+    const loadName = pages.current[loadPage.current]?.name
+
+    fetching.current = true
+    let changed = false
+    try {
+      const pgs: table[] = Object.values((await axios.get(`${API_BASE}/serve.php`)).data)
+      if (pgs.length !== pages.current.length || pgs.some((p, i) => p.name !== pages.current[i]?.name))
+        changed = true
+      pages.current = JSON.parse(JSON.stringify(pgs))
+
+      const valid = new Set(pgs.map(p => p.name))
+      for (const name of Object.keys(images.current)) {
+        if (!valid.has(name)) {
+          delete images.current[name]
+          changed = true
+        }
+      }
+
+      for (const page of pgs) {
+        if (!images.current[page.name]) continue
+        const res = await axios.get(`${API_BASE}/serve.php?name=` + page.name)
+        const fresh: image[] = (Object.values(res.data) as image[]).map(img => ({ ...img, table: page.name }))
+        const prev = images.current[page.name]
+        if (fresh.length !== prev.length || fresh.some((img, i) => img.path !== prev[i].path)) {
+          images.current[page.name] = fresh
+          changed = true
+        }
+      }
+
+      const newLoad = pages.current.findIndex(p => p.name === loadName)
+      if (newLoad >= 0) loadPage.current = newLoad
+
+      if (selPath) {
+        for (let p = 0; p < pgs.length; p++) {
+          const idx = images.current[pgs[p].name]?.findIndex(i => i.path === selPath) ?? -1
+          if (idx >= 0) {
+            if (idx !== sel[0] || p !== sel[1]) setSelectedInd([idx, p])
+            break
+          }
+        }
+      }
+    } catch {
+      fetching.current = false
+      return
+    }
+    fetching.current = false
+    if (changed) relayoutLoaded()
+  }
+  syncFeedRef.current = syncFeed
 
   // add scroll event listener
   useEffect(() => {
@@ -264,6 +396,17 @@ export default function Browse() {
     fetchPages()
 
     setAspectRatio(window.innerWidth / window.innerHeight)
+  }, [])
+
+  useEffect(() => {
+    const tick = () => { syncFeedRef.current() }
+    const id = setInterval(tick, POLL_MS)
+    const onVis = () => { if (!document.hidden) tick() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVis)
+    }
   }, [])
 
   const updateCurrPage = (ind: number) => {

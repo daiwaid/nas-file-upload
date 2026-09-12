@@ -1,6 +1,7 @@
 <?php 
 
 require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/db.php';
 
 header("Access-Control-Allow-Origin: *");
 
@@ -267,17 +268,7 @@ function addToTable($conn, $tbl_name, $path) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-	$host = 'localhost';
-	$dbname='photo_album';
-	$username = 'root';
-	$password = '20011210';
-
-	$conn = new mysqli($host, $username, $password, $dbname);
-
-	if ($conn->connect_error) {
-		print_r("could not connect to the database:" . $pe->getMessage());
-		exit();
-	}
+	$conn = dbConnect();
 
 	if (isset($_FILES['files'])) {
 		$path = '/var/share/lan-drive/';
@@ -331,4 +322,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	//fwrite($handle, $file_tmp);
     }
 }
-

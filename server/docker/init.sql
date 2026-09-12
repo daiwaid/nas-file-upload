@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS main (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(128),
+    year INT,
+    month INT
+);
