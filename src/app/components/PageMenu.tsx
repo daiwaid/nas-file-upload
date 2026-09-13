@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import './PageMenu.css'
+import './pageMenu.css'
 import { table } from '../Types'
 import Icon from './Icon'
 import MenuBackground from './MenuBackground'

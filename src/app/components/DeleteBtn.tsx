@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import './DeleteBtn.css'
+import './deleteBtn.css'
 import Icon from './Icon'
 import MenuBackground from './MenuBackground'
 

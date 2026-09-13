@@ -46,29 +46,105 @@ function saveFile($tmp_path, $path, $conn, $tbl_name, $file_date=-1, $number=0) 
 	addToTable($conn, $tbl_name, $new_path);
 }
 
+function exifTakenDate($exif_data) {
+    foreach (['DateTimeOriginal', 'DateTimeDigitized', 'DateTime'] as $key) {
+        if (empty($exif_data[$key])) {
+            continue;
+        }
+        $dt = DateTime::createFromFormat('Y:m:d H:i:s', $exif_data[$key]);
+        if ($dt instanceof DateTime) {
+            return $dt;
+        }
+    }
+    return null;
+}
+
 function findPhotoDate($path) {
     $exif_data = @exif_read_data($path);
-    if ($exif_data) { // first try exif data (photos)
-        if (array_key_exists('DateTime', $exif_data)) {
-            $file_date = new DateTime($exif_data['DateTime']);
+    if ($exif_data) {
+        $file_date = exifTakenDate($exif_data);
+        if ($file_date) {
             return $file_date->getTimestamp();
         }
     }
-     // otherwise try more extensive tool
-    eval('$array=' . `exiftool -php -TAG '-CreateDate' -dateFormat '%s' "$path"`);
+    eval('$array=' . `exiftool -php -TAG '-DateTimeOriginal' '-CreateDate' -dateFormat '%s' "$path"`);
 
+    if (array_key_exists('DateTimeOriginal', $array[0])) {
+        return $array[0]['DateTimeOriginal'];
+    }
     if (array_key_exists('CreateDate', $array[0])) {
-        return $array[0]['CreateDate'];	
+        return $array[0]['CreateDate'];
     }
     return filemtime($path);
 }
 
-function findVideoDate($path) {
-    eval('$array=' . `exiftool -php -TAG '-CreationDate' -api largefilesupport=1 -dateFormat '%s' "$path"`);
+function mediaTimeZone() {
+    $name = getenv('TZ');
+    if (!is_string($name) || $name === '') {
+        $name = 'America/Los_Angeles';
+    }
+    try {
+        return new DateTimeZone($name);
+    } catch (Exception $e) {
+        return new DateTimeZone('America/Los_Angeles');
+    }
+}
 
-	if (array_key_exists('CreationDate', $array[0])) {
-		return $array[0]['CreationDate'];
-	}
+function parseMediaDate($value) {
+    if (!is_string($value)) {
+        return null;
+    }
+    $value = trim($value);
+    if ($value === '' || str_starts_with($value, '0000')) {
+        return null;
+    }
+    if (!preg_match('/^(\d{4})[:\-](\d{2})[:\-](\d{2})[ T](\d{2}):(\d{2}):(\d{2})(.*)$/', $value, $m)) {
+        return null;
+    }
+    $clock = sprintf('%04d-%02d-%02d %02d:%02d:%02d', (int)$m[1], (int)$m[2], (int)$m[3], (int)$m[4], (int)$m[5], (int)$m[6]);
+    $suffix = strtoupper(trim($m[7]));
+    if ($suffix === '' || $suffix === 'Z' || preg_match('/^[+-]00:?00$/', $suffix)) {
+        $dt = DateTime::createFromFormat('Y-m-d H:i:s', $clock, new DateTimeZone('UTC'));
+        if (!$dt instanceof DateTime) {
+            return null;
+        }
+        $dt->setTimezone(mediaTimeZone());
+        return $dt;
+    }
+    if (preg_match('/^([+-])(\d{2}):?(\d{2})$/', $suffix, $off)) {
+        $tzName = $off[1] . $off[2] . ':' . $off[3];
+        try {
+            $dt = DateTime::createFromFormat('Y-m-d H:i:s', $clock, new DateTimeZone($tzName));
+        } catch (Exception $e) {
+            return null;
+        }
+        return $dt instanceof DateTime ? $dt : null;
+    }
+    return null;
+}
+
+function readVideoMeta($path) {
+    eval('$array=' . `exiftool -php -TAG '-CreationDate' '-CreateDate' '-Rotation' -api largefilesupport=1 "$path"`);
+    $tags = (isset($array[0]) && is_array($array[0])) ? $array[0] : [];
+    $date = null;
+    foreach (['CreationDate', 'CreateDate'] as $key) {
+        if (empty($tags[$key])) {
+            continue;
+        }
+        $date = parseMediaDate($tags[$key]);
+        if ($date) {
+            break;
+        }
+    }
+    $rotation = isset($tags['Rotation']) ? (int)$tags['Rotation'] : 0;
+    return [$date, $rotation];
+}
+
+function findVideoDate($path) {
+    [$date] = readVideoMeta($path);
+    if ($date) {
+        return $date->getTimestamp();
+    }
     return filemtime($path);
 }
 
@@ -188,10 +264,10 @@ function addToTable($conn, $tbl_name, $path) {
 			$orientation = 1;
 			list($width, $height) = getimagesize($path);
 
-			$exif_data = exif_read_data($path);
-			if ($exif_data) { // first try exif data (photos)
-				if (array_key_exists('DateTime', $exif_data)) {
-					$file_date = new DateTime($exif_data['DateTime']);
+			$exif_data = @exif_read_data($path);
+			if ($exif_data) {
+				$file_date = exifTakenDate($exif_data);
+				if ($file_date) {
 					$timestamp = $file_date->format('Y-m-d H:i:s');
 				}
 				if (array_key_exists('Orientation', $exif_data)) {
@@ -203,10 +279,13 @@ function addToTable($conn, $tbl_name, $path) {
 					}
 				}
 			}
-			if ($timestamp === NULL) { // otherwise try more extensive tool
-				eval('$array=' . `exiftool -php -TAG '-CreateDate' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
+			if ($timestamp === NULL) {
+				eval('$array=' . `exiftool -php -TAG '-DateTimeOriginal' '-CreateDate' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
 
-				if (array_key_exists('CreateDate', $array[0])) {
+				if (array_key_exists('DateTimeOriginal', $array[0])) {
+					$timestamp = $array[0]['DateTimeOriginal'];
+				}
+				else if (array_key_exists('CreateDate', $array[0])) {
 					$timestamp = $array[0]['CreateDate'];
 				}
 			}
@@ -216,26 +295,9 @@ function addToTable($conn, $tbl_name, $path) {
 			$type = 'image';
 		}
 		else {
-			$orientation = 0;
-
-			// get taken time and rotation
-			eval('$array=' . `exiftool -php -TAG '-CreationDate' '-Rotation' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
-
-			if (array_key_exists('CreationDate', $array[0])) {
-				$timestamp = $array[0]['CreationDate'];
-				if (array_key_exists('Rotation', $array[0])) {
-					$orientation = $array[0]['Rotation'];
-				}
-			}
-			else { // fallback to upload time
-				eval('$array=' . `exiftool -php -TAG '-CreateDate' '-Rotation' -api largefilesupport=1 -d "%Y-%m-%d %H:%M:%S" "$path"`);
-
-				if (array_key_exists('CreateDate', $array[0])) {
-					$timestamp = $array[0]['CreateDate'];
-					if (array_key_exists('Rotation', $array[0])) {
-						$orientation = $array[0]['Rotation'];
-					}
-				}
+			[$file_date, $orientation] = readVideoMeta($path);
+			if ($file_date) {
+				$timestamp = $file_date->format('Y-m-d H:i:s');
 			}
 
 			$ffprobe = FFMpeg\FFProbe::create();

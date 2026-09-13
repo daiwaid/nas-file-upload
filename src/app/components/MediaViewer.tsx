@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { image, imageList } from '../Types'
-import './MediaViewer.css'
+import './mediaViewer.css'
 import DeleteBtn from './DeleteBtn'
 import ImgContainer from './ImgContainer'
 import Icon from './Icon'

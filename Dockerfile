@@ -45,14 +45,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     APACHE_RUN_DIR=/var/run/apache2 \
     APACHE_LOCK_DIR=/var/lock/apache2 \
     APACHE_LOG_DIR=/var/log/apache2 \
-    LANG=C.UTF-8
+    LANG=C.UTF-8 \
+    TZ=America/Los_Angeles
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         apache2 libapache2-mod-php php php-cli php-mysql php-gd php-xml \
         php-mbstring php-curl php-zip php-exif \
         libheif-examples libheif-plugin-libde265 libde265-0 libavif-bin \
         ffmpeg libimage-exiftool-perl python3 cifs-utils \
-        composer ca-certificates curl \
+        composer ca-certificates curl tzdata \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
